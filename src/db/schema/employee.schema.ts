@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm"
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 
 import { user } from "./auth.schema"
-import { workLocation } from "./master.schema"
+import { team, workLocation } from "./master.schema"
 
 export const GENDERS = ["male", "female", "other", "undisclosed"] as const
 export type Gender = (typeof GENDERS)[number]
@@ -30,6 +30,17 @@ export const employeeProfile = sqliteTable(
 		workLocationId: text("work_location_id").references(() => workLocation.id, {
 			onDelete: "restrict",
 		}),
+		/**
+		 * The department HR has this person in, from the employee import. It
+		 * pre-fills the registration form; `registration.teamId` is what the
+		 * employee confirms and what the allocator reads.
+		 *
+		 * **Only a shared team belongs here** — one with `team.eventId is null`.
+		 * This table is cross-edition, so pointing at an edition-scoped team would
+		 * be the same stale-by-construction foreign key that keeps `work_location`
+		 * out of edition scope. The import enforces it; the FK cannot express it.
+		 */
+		defaultTeamId: text("default_team_id").references(() => team.id, { onDelete: "restrict" }),
 		gender: text("gender").$type<Gender>().notNull().default("undisclosed"),
 		specialRequest: text("special_request"),
 		/**
@@ -55,6 +66,7 @@ export const employeeProfile = sqliteTable(
 			.on(table.employeeCode)
 			.where(sql`${table.employeeCode} is not null`),
 		index("employee_profile_workLocationId_idx").on(table.workLocationId),
+		index("employee_profile_defaultTeamId_idx").on(table.defaultTeamId),
 		check(
 			"employee_profile_gender_check",
 			sql`${table.gender} in ('male','female','other','undisclosed')`,

@@ -22,6 +22,13 @@
       "when": 1789069980070,
       "tag": "0002_green_nightmare",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789070818306,
+      "tag": "0003_pink_black_widow",
+      "breakpoints": true
     }
   ]
 }

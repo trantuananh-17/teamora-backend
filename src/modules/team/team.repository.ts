@@ -28,6 +28,15 @@ export const teamRepository = {
 			.orderBy(asc(team.sortOrder), asc(team.name))
 	},
 
+	/**
+	 * Every team, both scopes. Only the employee import needs this: it resolves a
+	 * team name typed by HR and has to tell "no such team" apart from "that team
+	 * exists but only inside one edition".
+	 */
+	async listAll(executor: DbExecutor = db): Promise<TeamRow[]> {
+		return executor.select().from(team).orderBy(asc(team.name))
+	},
+
 	async findById(id: string, executor: DbExecutor = db): Promise<TeamRow | undefined> {
 		const rows = await executor.select().from(team).where(eq(team.id, id)).limit(1)
 		return rows[0]

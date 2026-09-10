@@ -25,6 +25,20 @@ const envSchema = z.object({
 	DATABASE_PATH: z.string().min(1),
 
 	/**
+	 * Limits on the Excel import, which is untrusted input. A small compressed
+	 * file can expand into millions of rows and exhaust this process, and there is
+	 * only one process (ADR-008) — so the whole system goes with it.
+	 *
+	 * Both are checked before parsing begins, not while reading rows.
+	 */
+	IMPORT_MAX_FILE_BYTES: z.coerce
+		.number()
+		.int()
+		.positive()
+		.default(5 * 1024 * 1024),
+	IMPORT_MAX_ROWS: z.coerce.number().int().positive().default(5_000),
+
+	/**
 	 * Mail is off entirely when SMTP_HOST is unset, which is what lets tests and
 	 * a bare `pnpm dev:api` run without a relay. Half-configured is off, not
 	 * half-on.
@@ -68,6 +82,11 @@ export const env = {
 	auth: { secret: raw.BETTER_AUTH_SECRET },
 
 	databasePath: raw.DATABASE_PATH,
+
+	import: {
+		maxFileBytes: raw.IMPORT_MAX_FILE_BYTES,
+		maxRows: raw.IMPORT_MAX_ROWS,
+	},
 
 	smtp: raw.SMTP_HOST
 		? {

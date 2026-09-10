@@ -4,6 +4,7 @@ import { cors } from "hono/cors"
 import { auth } from "../auth/auth"
 import { env } from "../config/env"
 import { checkDatabaseConnection } from "../db/client"
+import { employeeRoutes } from "../modules/employee/employee.routes"
 import { eventRoutes } from "../modules/event/event.routes"
 import { pickupPointRoutes } from "../modules/pickup-point/pickup-point.routes"
 import { teamRoutes } from "../modules/team/team.routes"
@@ -65,6 +66,7 @@ export function createApp() {
 	app.use("/v1/*", attachSession)
 
 	app.route("/v1/work-locations", workLocationRoutes)
+	app.route("/v1/employees", employeeRoutes)
 	app.route("/v1/events", eventRoutes)
 	// Both mount under the same prefix and carry their own `:eventId` segment,
 	// the same way Ragenta layers several routers under /v1/workspaces.
