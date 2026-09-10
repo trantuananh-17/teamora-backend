@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.github
+.claude
+.env
+.env.*
+!.env.example
+# The SQLite file is production data. It must never reach a build context, let
+# alone an image layer.
+data
+*.db
+*.db-shm
+*.db-wal
+*.log

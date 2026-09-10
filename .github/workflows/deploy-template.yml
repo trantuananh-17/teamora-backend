@@ -1,0 +1,195 @@
+# Reusable deploy. Called by release.yml on a tag, and by deploy.yml for a
+# manual re-deploy or rollback.
+#
+# The target is a Linux VM running Docker Compose (ADR-008) — no Kubernetes, no
+# Helm, no Argo CD. The compose file lives on the VM itself at DEPLOY_PATH;
+# Teamora has two services and does not have a separate deployment repository
+# the way Ragenta does. This workflow only tells the VM which image version to
+# run.
+#
+# Backend and frontend release independently, so a deploy touches only what its
+# own repository owns: it rewrites one `tag_var` line and brings up only the
+# services named in `services`. Nothing here knows which repository is calling.
+#
+# Configuration comes from the GitHub Environment named by `environment`, so
+# staging and production use the same variable names with different values and
+# neither can reach the other's host:
+#
+#   secrets   SSH_HOST   SSH_USER   SSH_KEY   (private key, no passphrase)
+#   vars      DEPLOY_PATH                     (directory holding docker-compose.yml)
+#
+# Until those are set the deploy self-skips with a notice instead of failing, so
+# tagging a release works before any VM exists.
+name: Deploy Template
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      image:
+        required: true
+        type: string
+      tag_var:
+        description: >-
+          The .env variable this release pins, e.g. IMAGE_TAG_BACKEND. One per
+          deployable: a shared name would mean deploying the frontend silently
+          moves the backend to the frontend's version.
+        required: true
+        type: string
+      services:
+        description: >-
+          Space-separated compose services this release owns, e.g. "api". Only
+          these are pulled and recreated, so a deploy never restarts somebody
+          else's containers.
+        required: true
+        type: string
+      migrate_run:
+        description: >-
+          Arguments for `docker compose run --rm` to apply migrations, e.g.
+          "api node dist/db/migrate.js". Empty to skip — only the repository
+          that owns the schema passes it.
+        required: false
+        type: string
+        default: ""
+      health_url:
+        description: >-
+          URL to poll on the VM after the deploy. Defaults to the API's, so a
+          repository serving something else must pass its own.
+        required: false
+        type: string
+        default: http://localhost:8080/health
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    # Gives this job the environment's secrets and variables, and lets required
+    # reviewers gate production from the repository settings.
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Is this environment wired up?
+        id: target
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          if [ -z "$SSH_HOST" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No SSH_HOST configured for '${{ inputs.environment }}'. Image ${{ inputs.image }} was published; deploy skipped."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy over SSH
+        if: steps.target.outputs.ready == 'true'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          # A deploy that hangs should fail, not hold the runner all day.
+          command_timeout: 15m
+          envs: VERSION,DEPLOY_PATH,TAG_VAR,SERVICES,MIGRATE_RUN
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+
+            # TAG_VAR is interpolated into a grep pattern and a shell
+            # assignment, so it has to look like a variable name and nothing
+            # else.
+            case "$TAG_VAR" in
+              [A-Z_]*[!A-Z0-9_]*|"") echo "::error::tag_var must be an upper-case identifier, got '$TAG_VAR'."; exit 1 ;;
+            esac
+
+            # Refuse rather than create one: the .env on the VM holds every
+            # secret this stack needs, and a deploy that quietly replaced it
+            # with a single line would take the environment down and look like
+            # it succeeded.
+            if [ ! -f .env ]; then
+              echo "::error::No .env in $DEPLOY_PATH. Provision the environment before deploying."
+              exit 1
+            fi
+
+            # Rewrite this deployable's line and nothing else, so a release here
+            # leaves the other service on the version it was pinned to. The
+            # value stays in .env, which is what lets someone on the VM run
+            # `docker compose up -d` by hand later and get the same versions.
+            # `|| true` because grep exits 1 when it filters everything out,
+            # which under `set -e` would abort a perfectly valid deploy.
+            #
+            # The umask and the chmod are not belt-and-braces: a shell redirect
+            # creates .env.next with the login's default mode, and `mv` then
+            # hands those permissions to a file holding every secret this
+            # environment has — the SMTP credentials among them. Without them
+            # the first deploy silently turns a 0600 .env into a world-readable
+            # one.
+            ( umask 077; grep -v "^${TAG_VAR}=" .env > .env.next || true )
+            echo "${TAG_VAR}=${VERSION}" >> .env.next
+            chmod 600 .env.next
+            mv .env.next .env
+            echo "Pinned ${TAG_VAR}=${VERSION}"
+
+            # shellcheck disable=SC2086 — SERVICES is a deliberate word list.
+            docker compose pull $SERVICES
+
+            # Migrations are an explicit step BEFORE the new containers start,
+            # never a container entrypoint side effect (ADR-012). They are
+            # expand-only, so the currently running version keeps working across
+            # this window. Only the repository owning the schema passes this.
+            if [ -n "$MIGRATE_RUN" ]; then
+              docker compose run --rm $MIGRATE_RUN
+            else
+              echo "No migration step for this deployable."
+            fi
+
+            docker compose up -d $SERVICES
+            docker compose ps
+        env:
+          VERSION: ${{ inputs.version }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          TAG_VAR: ${{ inputs.tag_var }}
+          SERVICES: ${{ inputs.services }}
+          MIGRATE_RUN: ${{ inputs.migrate_run }}
+
+      - name: Health check
+        if: steps.target.outputs.ready == 'true'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: HEALTH_URL
+          script: |
+            set -euo pipefail
+            # Give the service a moment to bind, then require a healthy answer.
+            # Failing here is the signal to roll back to the previous tag.
+            for attempt in $(seq 1 10); do
+              if curl -fsS "$HEALTH_URL" | grep -q '"status":"ok"'; then
+                echo "Healthy after ${attempt} attempt(s)."
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "::error::$HEALTH_URL did not report ok. Roll back with the previous tag."
+            exit 1
+        env:
+          HEALTH_URL: ${{ inputs.health_url }}
+
+      - name: Summary
+        run: |
+          {
+            echo "### ${{ inputs.environment }}"
+            echo
+            echo "Version: \`${{ inputs.version }}\`"
+            echo "Image: \`${{ inputs.image }}\`"
+            echo "Pinned: \`${{ inputs.tag_var }}\`"
+            echo "Services: \`${{ inputs.services }}\`"
+            if [ "${{ steps.target.outputs.ready }}" != "true" ]; then
+              echo
+              echo "Deploy skipped — this environment has no \`SSH_HOST\` secret yet."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
