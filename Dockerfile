@@ -20,8 +20,11 @@ RUN pnpm install --frozen-lockfile && \
 FROM base AS runner
 WORKDIR /app
 
+# `-G nodejs` is not decoration: without it Alpine's adduser drops the account
+# into `nogroup`, and every `--chown=teamora:nodejs` below grants a group the
+# process is not in.
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 teamora
+    adduser --system --uid 1001 -G nodejs teamora
 
 COPY --from=builder --chown=teamora:nodejs /app/node_modules /app/node_modules
 COPY --from=builder --chown=teamora:nodejs /app/dist /app/dist
@@ -30,10 +33,11 @@ COPY --from=builder --chown=teamora:nodejs /app/package.json /app/package.json
 # step before this container starts (ADR-012).
 COPY --from=builder --chown=teamora:nodejs /app/drizzle /app/drizzle
 
-# DATABASE_PATH lives here and the VM bind-mounts over it. Created and owned up
-# front so the very first boot on a fresh host can write the file — a bind mount
-# whose host directory is owned by root leaves this process unable to open its
-# own database, which surfaces as a health check that never turns green.
+# DATABASE_PATH lives here. This only covers the unmounted case: a bind mount
+# replaces the directory along with its ownership, so the host side has to be
+# `chown 1001:1001` before the first deploy or this process cannot open its own
+# database — which surfaces only as a health check that never turns green.
+# DEPLOYMENT.md carries that step.
 RUN mkdir -p /app/data && chown teamora:nodejs /app/data
 VOLUME ["/app/data"]
 
