@@ -1,6 +1,7 @@
 import type { Context } from "hono"
 
 import type { AuthSession } from "../auth/auth"
+import type { EventRow } from "../modules/event/event.repository"
 import { NotFoundError, UnauthorizedError } from "../shared/errors"
 import type { Logger } from "../shared/logger"
 
@@ -9,6 +10,8 @@ export interface AppVariables {
 	logger: Logger
 	user?: AuthSession["user"]
 	session?: AuthSession["session"]
+	/** Set by `eventScope` once `:eventId` has been resolved to a real row. */
+	event?: EventRow
 }
 
 export type AppEnv = { Variables: AppVariables }
@@ -23,6 +26,18 @@ export function requireUser(c: AppContext): AuthSession["user"] {
 	const user = c.get("user")
 	if (!user) throw new UnauthorizedError()
 	return user
+}
+
+/**
+ * The edition this request is scoped to. A handler that reaches for this without
+ * `eventScope` above it gets a 404 rather than reading `undefined.status` —
+ * which matters because `event.status` is an authorization input (ADR-005), and
+ * a missing one must never read as "allowed".
+ */
+export function requireEventScope(c: AppContext): EventRow {
+	const event = c.get("event")
+	if (!event) throw new NotFoundError("Event")
+	return event
 }
 
 /**

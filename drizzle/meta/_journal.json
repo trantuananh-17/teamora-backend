@@ -8,6 +8,13 @@
       "when": 1789063317219,
       "tag": "0000_early_wild_child",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789069294917,
+      "tag": "0001_motionless_machine_man",
+      "breakpoints": true
     }
   ]
 }

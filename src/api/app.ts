@@ -4,6 +4,7 @@ import { cors } from "hono/cors"
 import { auth } from "../auth/auth"
 import { env } from "../config/env"
 import { checkDatabaseConnection } from "../db/client"
+import { eventRoutes } from "../modules/event/event.routes"
 import { errorHandler } from "./middleware/error-handler"
 import { requestContext } from "./middleware/request-context"
 import { attachSession } from "./middleware/session"
@@ -59,6 +60,8 @@ export function createApp() {
 	// Registered before the module routers, which is what makes it run for them:
 	// Hono applies middleware only to handlers added after it.
 	app.use("/v1/*", attachSession)
+
+	app.route("/v1/events", eventRoutes)
 
 	app.notFound((c) =>
 		c.json(
