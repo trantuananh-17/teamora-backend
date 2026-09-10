@@ -1,6 +1,7 @@
 import type { Context } from "hono"
 
 import type { AuthSession } from "../auth/auth"
+import type { AuditActor } from "../modules/audit/audit.service"
 import type { EventRow } from "../modules/event/event.repository"
 import { NotFoundError, UnauthorizedError } from "../shared/errors"
 import type { Logger } from "../shared/logger"
@@ -26,6 +27,18 @@ export function requireUser(c: AppContext): AuthSession["user"] {
 	const user = c.get("user")
 	if (!user) throw new UnauthorizedError()
 	return user
+}
+
+/**
+ * Who is acting, taken from the session and never from the body.
+ *
+ * Name and email travel as values because `audit_log` stores a snapshot rather
+ * than a foreign key: the trail has to still name a person after their account
+ * is deleted (ADR-010).
+ */
+export function auditActor(c: AppContext): AuditActor {
+	const user = requireUser(c)
+	return { id: user.id, name: user.name ?? null, email: user.email ?? null }
 }
 
 /**

@@ -17,7 +17,12 @@ export interface AuditActor {
 }
 
 export interface AuditEntry {
-	eventId: string
+	/**
+	 * Null for cross-edition master data — employee profiles, work locations.
+	 * Those belong to the company rather than to an edition, so there is no
+	 * edition to file the entry under.
+	 */
+	eventId: string | null
 	actor: AuditActor | null
 	entity: string
 	entityId: string

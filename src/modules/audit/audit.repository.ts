@@ -4,7 +4,7 @@ import { db, type DbExecutor } from "../../db/client"
 import { auditLog } from "../../db/schema"
 
 export interface AuditRow {
-	eventId: string
+	eventId: string | null
 	actorId: string | null
 	actorName: string | null
 	actorEmail: string | null

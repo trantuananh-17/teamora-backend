@@ -5,6 +5,9 @@ import { auth } from "../auth/auth"
 import { env } from "../config/env"
 import { checkDatabaseConnection } from "../db/client"
 import { eventRoutes } from "../modules/event/event.routes"
+import { pickupPointRoutes } from "../modules/pickup-point/pickup-point.routes"
+import { teamRoutes } from "../modules/team/team.routes"
+import { workLocationRoutes } from "../modules/work-location/work-location.routes"
 import { errorHandler } from "./middleware/error-handler"
 import { requestContext } from "./middleware/request-context"
 import { attachSession } from "./middleware/session"
@@ -61,7 +64,12 @@ export function createApp() {
 	// Hono applies middleware only to handlers added after it.
 	app.use("/v1/*", attachSession)
 
+	app.route("/v1/work-locations", workLocationRoutes)
 	app.route("/v1/events", eventRoutes)
+	// Both mount under the same prefix and carry their own `:eventId` segment,
+	// the same way Ragenta layers several routers under /v1/workspaces.
+	app.route("/v1/events", teamRoutes)
+	app.route("/v1/events", pickupPointRoutes)
 
 	app.notFound((c) =>
 		c.json(

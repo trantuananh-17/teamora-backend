@@ -18,9 +18,15 @@ export const auditLog = sqliteTable(
 	"audit_log",
 	{
 		id: text("id").primaryKey(),
-		eventId: text("event_id")
-			.notNull()
-			.references(() => event.id, { onDelete: "restrict" }),
+		/**
+		 * Null means the change was to cross-edition master data — an employee
+		 * profile, a work location — which belongs to the company rather than to
+		 * any one edition and therefore has no edition to file the entry under.
+		 *
+		 * Importing four hundred people is exactly the kind of change §5.6 wants a
+		 * record of, and it happens before an edition is even chosen.
+		 */
+		eventId: text("event_id").references(() => event.id, { onDelete: "restrict" }),
 		/** Nullable: a change made by a scheduled job has no person behind it. */
 		actorId: text("actor_id"),
 		actorName: text("actor_name"),

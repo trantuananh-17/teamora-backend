@@ -15,6 +15,13 @@
       "when": 1789069294917,
       "tag": "0001_motionless_machine_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789069980070,
+      "tag": "0002_green_nightmare",
+      "breakpoints": true
     }
   ]
 }
