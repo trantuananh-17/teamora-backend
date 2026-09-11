@@ -6,7 +6,11 @@ import { newId } from "../../shared/id"
 import { auditService, type AuditActor } from "../audit/audit.service"
 import { teamRepository } from "../team/team.repository"
 import { workLocationRepository } from "../work-location/work-location.repository"
-import { employeeRepository, type EmployeeListRow } from "./employee.repository"
+import {
+	employeeRepository,
+	type EmployeeListRow,
+	type EmployeeSelfRow,
+} from "./employee.repository"
 import {
 	validateEmployeeRows,
 	type EmployeeRecord,
@@ -23,6 +27,12 @@ export interface ImportSummary {
 }
 
 export const employeeService = {
+	async getMine(userId: string): Promise<EmployeeSelfRow> {
+		const employee = await employeeRepository.findByUserId(userId)
+		if (!employee) throw new ValidationError("Tài khoản không tồn tại.")
+		return employee
+	},
+
 	async list(): Promise<EmployeeListRow[]> {
 		return employeeRepository.list()
 	},

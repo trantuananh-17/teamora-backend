@@ -17,6 +17,10 @@ const ENTITY = "event"
  * the same methods the HTTP layer does.
  */
 export const eventService = {
+	async getCurrent(): Promise<EventRow | null> {
+		return (await eventRepository.findCurrent()) ?? null
+	},
+
 	async list(query: PaginationQuery): Promise<Page<EventRow>> {
 		const { items, total } = await eventRepository.list(query)
 		return page(items, total, query)

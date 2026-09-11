@@ -1,10 +1,14 @@
 import type { AppContext } from "../../api/types"
-import { auditActor } from "../../api/types"
+import { auditActor, requireUser } from "../../api/types"
 import { env } from "../../config/env"
 import { ValidationError } from "../../shared/errors"
 import { employeeService } from "./employee.service"
 
 export const employeeController = {
+  async mine(c: AppContext) {
+    return c.json(await employeeService.getMine(requireUser(c).id))
+  },
+
   async list(c: AppContext) {
     return c.json({ items: await employeeService.list() })
   },

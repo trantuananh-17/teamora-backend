@@ -29,6 +29,20 @@
       "when": 1789070818306,
       "tag": "0003_pink_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789105700162,
+      "tag": "0004_eager_wind_dancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789113292272,
+      "tag": "0005_eminent_titania",
+      "breakpoints": true
     }
   ]
 }

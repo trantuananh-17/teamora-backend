@@ -5,6 +5,9 @@ import { admin as adminPlugin } from "better-auth/plugins"
 import { env } from "../config/env"
 import { db } from "../db/client"
 import { account, session, user, verification } from "../db/schema"
+import { sendEmail } from "../mail/mailer"
+import { renderPasswordReset } from "../mail/templates"
+import { logger } from "../shared/logger"
 import { ac, roles } from "./permissions"
 
 /** Localhost only, for the same reason as DEFAULT_ORIGINS in src/api/app.ts. */
@@ -48,6 +51,29 @@ export const auth = betterAuth({
 
 	emailAndPassword: {
 		enabled: true,
+		minPasswordLength: 12,
+		maxPasswordLength: 128,
+		resetPasswordTokenExpiresIn: 60 * 60,
+		revokeSessionsOnPasswordReset: true,
+		sendResetPassword: async ({ user: resetUser, token }) => {
+			const resetUrl = new URL("/reset-password", env.appBaseUrl)
+			resetUrl.searchParams.set("token", token)
+			const rendered = renderPasswordReset(resetUser.name, resetUrl.toString())
+
+			// Better Auth deliberately returns the same response whether the address
+			// exists. Keep SMTP work in the background so relay timing/failures cannot
+			// turn that generic response into an account-enumeration side channel.
+			void sendEmail({
+				to: resetUser.email,
+				subject: rendered.subject,
+				html: rendered.html,
+			}).catch((error: unknown) => {
+				logger.error("auth.password_reset_email_failed", {
+					userId: resetUser.id,
+					error: error instanceof Error ? error.message : String(error),
+				})
+			})
+		},
 		/**
 		 * Accounts come from the BTC's employee import, never from a form — there
 		 * is no /signup route in the frontend either (ADR-016). Bootstrap the first

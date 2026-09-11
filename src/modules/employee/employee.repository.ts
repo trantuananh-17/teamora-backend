@@ -1,7 +1,7 @@
 import { asc, eq, inArray, isNotNull } from "drizzle-orm"
 
 import { db, type DbExecutor } from "../../db/client"
-import { employeeProfile, user } from "../../db/schema"
+import { employeeProfile, team, user, workLocation } from "../../db/schema"
 import type { Gender } from "../../db/schema/employee.schema"
 
 export type EmployeeProfileRow = typeof employeeProfile.$inferSelect
@@ -18,6 +18,11 @@ export interface EmployeeListRow {
 	defaultTeamId: string | null
 	gender: string | null
 	active: boolean | null
+}
+
+export interface EmployeeSelfRow extends EmployeeListRow {
+	workLocationName: string | null
+	defaultTeamName: string | null
 }
 
 /**
@@ -51,6 +56,35 @@ export interface ProfileInsert {
 }
 
 export const employeeRepository = {
+	async findByUserId(
+		userId: string,
+		executor: DbExecutor = db,
+	): Promise<EmployeeSelfRow | undefined> {
+		const rows = await executor
+			.select({
+				userId: user.id,
+				email: user.email,
+				name: user.name,
+				role: user.role,
+				profileId: employeeProfile.id,
+				employeeCode: employeeProfile.employeeCode,
+				phone: employeeProfile.phone,
+				workLocationId: employeeProfile.workLocationId,
+				workLocationName: workLocation.name,
+				defaultTeamId: employeeProfile.defaultTeamId,
+				defaultTeamName: team.name,
+				gender: employeeProfile.gender,
+				active: employeeProfile.active,
+			})
+			.from(user)
+			.leftJoin(employeeProfile, eq(employeeProfile.userId, user.id))
+			.leftJoin(workLocation, eq(employeeProfile.workLocationId, workLocation.id))
+			.leftJoin(team, eq(employeeProfile.defaultTeamId, team.id))
+			.where(eq(user.id, userId))
+			.limit(1)
+		return rows[0]
+	},
+
 	/**
 	 * Rows are written into Better Auth's `user` table directly rather than
 	 * through its API, because the import has to be one transaction (§13, and the

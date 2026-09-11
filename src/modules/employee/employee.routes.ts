@@ -16,7 +16,8 @@ import { employeeController } from "./employee.controller"
  */
 export const employeeRoutes = new Hono<AppEnv>()
 
-employeeRoutes.use("*", requireAuth, requireOrganizer)
+employeeRoutes.use("*", requireAuth)
 
-employeeRoutes.get("/", (c) => employeeController.list(c))
-employeeRoutes.post("/import", (c) => employeeController.import(c))
+employeeRoutes.get("/me", (c) => employeeController.mine(c))
+employeeRoutes.get("/", requireOrganizer, (c) => employeeController.list(c))
+employeeRoutes.post("/import", requireOrganizer, (c) => employeeController.import(c))

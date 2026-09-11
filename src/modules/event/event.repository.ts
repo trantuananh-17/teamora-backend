@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm"
+import { count, desc, eq, ne } from "drizzle-orm"
 
 import { db, type DbExecutor } from "../../db/client"
 import { event } from "../../db/schema"
@@ -26,6 +26,16 @@ export interface UpdateEventInput {
  * repository in the codebase takes `eventId` first and puts it in the `where`.
  */
 export const eventRepository = {
+	async findCurrent(executor: DbExecutor = db): Promise<EventRow | undefined> {
+		const rows = await executor
+			.select()
+			.from(event)
+			.where(ne(event.status, "event_completed"))
+			.orderBy(desc(event.createdAt))
+			.limit(1)
+		return rows[0]
+	},
+
 	async findById(id: string, executor: DbExecutor = db): Promise<EventRow | undefined> {
 		const rows = await executor.select().from(event).where(eq(event.id, id)).limit(1)
 		return rows[0]

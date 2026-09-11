@@ -11,6 +11,10 @@ import { eventService } from "./event.service"
  */
 
 export const eventController = {
+	async current(c: AppContext) {
+		return c.json(await eventService.getCurrent())
+	},
+
 	async list(c: AppContext) {
 		const query = paginationQuerySchema.parse(c.req.query())
 		return c.json(await eventService.list(query))

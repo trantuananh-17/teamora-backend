@@ -35,10 +35,12 @@
 		"drizzle-orm": "^0.45.2",
 		"exceljs": "^4.4.0",
 		"hono": "^4.13.7",
+		"nodemailer": "^10.0.3",
 		"zod": "^4.6.1"
 	},
 	"devDependencies": {
 		"@types/node": "^22.20.2",
+		"@types/nodemailer": "^8.0.1",
 		"drizzle-kit": "^0.31.10",
 		"tsup": "^8.5.1",
 		"tsx": "^4.23.13",

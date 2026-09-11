@@ -24,6 +24,10 @@ export const eventRoutes = new Hono<AppEnv>()
 
 eventRoutes.use("*", requireAuth)
 
+// Employee shell needs one deterministic edition before a registration exists.
+// The newest non-completed edition is the same default the admin switcher uses.
+eventRoutes.get("/current", (c) => eventController.current(c))
+
 eventRoutes.get("/", requireOrganizer, (c) => eventController.list(c))
 eventRoutes.post("/", requireOrganizer, (c) => eventController.create(c))
 

@@ -7,6 +7,8 @@ import { checkDatabaseConnection } from "../db/client"
 import { employeeRoutes } from "../modules/employee/employee.routes"
 import { eventRoutes } from "../modules/event/event.routes"
 import { pickupPointRoutes } from "../modules/pickup-point/pickup-point.routes"
+import { notificationRoutes } from "../modules/notification/notification.routes"
+import { registrationRoutes } from "../modules/registration/registration.routes"
 import { teamRoutes } from "../modules/team/team.routes"
 import { workLocationRoutes } from "../modules/work-location/work-location.routes"
 import { errorHandler } from "./middleware/error-handler"
@@ -72,6 +74,8 @@ export function createApp() {
 	// the same way Ragenta layers several routers under /v1/workspaces.
 	app.route("/v1/events", teamRoutes)
 	app.route("/v1/events", pickupPointRoutes)
+	app.route("/v1/events", registrationRoutes)
+	app.route("/v1/events", notificationRoutes)
 
 	app.notFound((c) =>
 		c.json(
