@@ -8,6 +8,8 @@ import { auditService, type AuditActor } from "../audit/audit.service"
 import type { ChangeStatusInput, CreateEventInput, UpdateEventInput } from "./event.dto"
 import { eventRepository, type EventRow } from "./event.repository"
 import { canAdvance, canRevert } from "./event.state"
+import { contentRepository } from "../content/content.repository"
+import { notificationService } from "../notification/notification.service"
 
 const ENTITY = "event"
 
@@ -161,6 +163,13 @@ export const eventService = {
 				},
 				tx,
 			)
+
+			if (publishAt) {
+				const registrationIds = await contentRepository.participantRegistrationIds(eventId, tx)
+				for (const registrationId of registrationIds) {
+					await notificationService.scheduleInformationPublished(eventId, registrationId, tx)
+				}
+			}
 
 			return after
 		})

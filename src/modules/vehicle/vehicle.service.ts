@@ -1,9 +1,12 @@
 import { db } from "../../db/client"
+import { TRANSPORT_LEGS } from "../../db/schema/registration.schema"
+import { writeWorkbook } from "../../excel/writer"
 import { ConflictError, NotFoundError, ValidationError } from "../../shared/errors"
 import { newId } from "../../shared/id"
 import { page, type PaginationQuery } from "../../shared/pagination"
 import { auditService, type AuditActor } from "../audit/audit.service"
 import { pickupPointRepository } from "../pickup-point/pickup-point.repository"
+import { notificationService } from "../notification/notification.service"
 import type { CreateVehicleInput, ListVehicleAssignmentsQuery, ListVehiclesQuery, ManualAssignVehicleInput, SetVehicleAssignmentLockInput, UpdateVehicleInput } from "./vehicle.dto"
 import { vehicleRepository } from "./vehicle.repository"
 
@@ -33,11 +36,13 @@ export const vehicleService = {
 		if (input.pickupPointId !== undefined) await validatePickupPoint(eventId, input.pickupPointId)
 		const collision = await vehicleRepository.findByCodeLeg(eventId, next.code, next.leg)
 		if (collision && collision.id !== id) throw new ConflictError(`Đã có xe ${next.code} cho chặng này.`)
+		const affected = (await vehicleRepository.listAssignments(eventId)).filter((row) => row.assignment.vehicleId === id).map((row) => row.assignment.registrationId)
 		return db.transaction(async (tx) => {
 			const updated = await vehicleRepository.update(eventId, id, { ...input, code: next.code }, tx)
 			if (!updated) throw new NotFoundError("Vehicle")
 			const after = { ...updated, assignedCount: before.assignedCount }
 			await auditService.record({ eventId, actor, entity: ENTITY, entityId: id, action: "update", before, after }, tx)
+			await notificationService.scheduleChangesIfPublished(eventId, affected, "vehicle", tx)
 			return after
 		})
 	},
@@ -81,6 +86,7 @@ export const vehicleService = {
 			await vehicleRepository.upsertManualAssignments(eventId, target.id, target.leg, actor.id, input.registrationIds, tx)
 			const after = await vehicleRepository.findAssignmentsForRegistrations(eventId, target.leg, input.registrationIds, tx)
 			await auditService.record({ eventId, actor, entity: "vehicle_assignment", entityId: target.id, action: "manual_assign", before, after, reason: input.reason }, tx)
+			await notificationService.scheduleChangesIfPublished(eventId, input.registrationIds, "vehicle", tx)
 			return { updated: candidates.length }
 		})
 	},
@@ -94,6 +100,33 @@ export const vehicleService = {
 			return after
 		})
 	},
+	async exportWorkbook(eventId: string, actor: AuditActor) {
+		const [vehicles, assignments, ...candidateLists] = await Promise.all([
+			vehicleRepository.listAll(eventId), vehicleRepository.listAssignments(eventId),
+			...TRANSPORT_LEGS.map((leg) => vehicleRepository.listCandidates(eventId, leg)),
+		])
+		const candidates = new Map(candidateLists.flat().map((row) => [row.id, row]))
+		await auditService.record({ eventId, actor, entity: ENTITY, entityId: eventId, action: "export", after: { vehicles: vehicles.length, assignments: assignments.length } })
+		return writeWorkbook([
+			{ name: "Xe", columns: [
+				{ key: "code", header: "Mã xe", required: true }, { key: "name", header: "Tên xe", required: true },
+				{ key: "leg", header: "Chặng", required: true }, { key: "capacity", header: "Sức chứa", required: true },
+				{ key: "assigned", header: "Đã xếp", required: true }, { key: "gatherAt", header: "Giờ tập trung", required: true },
+				{ key: "departAt", header: "Giờ khởi hành", required: true }, { key: "destination", header: "Điểm đến", required: true },
+				{ key: "leaderName", header: "Trưởng xe", required: false }, { key: "leaderPhone", header: "Điện thoại", required: false },
+			], rows: vehicles.map((row) => ({ code: row.code, name: row.name, leg: row.leg, capacity: row.capacity, assigned: row.assignedCount, gatherAt: formatDate(row.gatherAt), departAt: formatDate(row.departAt), destination: row.destination, leaderName: row.leaderName, leaderPhone: row.leaderPhone })) },
+			{ name: "Phân xe", columns: [
+				{ key: "name", header: "CBNV", required: true }, { key: "email", header: "Email", required: true },
+				{ key: "team", header: "Team", required: true }, { key: "leg", header: "Chặng", required: true },
+				{ key: "vehicle", header: "Xe", required: true }, { key: "source", header: "Nguồn", required: true },
+				{ key: "locked", header: "Đã khóa", required: true },
+			], rows: assignments.map((row) => { const person = candidates.get(row.assignment.registrationId); return { name: person?.user.name ?? row.assignment.registrationId, email: person?.user.email ?? "", team: person?.team.name ?? "", leg: row.assignment.leg, vehicle: row.vehicle.code, source: row.assignment.source, locked: row.assignment.locked ? "Có" : "Không" } }) },
+		])
+	},
+}
+
+function formatDate(value: Date) {
+	return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(value)
 }
 
 async function validatePickupPoint(eventId: string, pickupPointId: string | null) {

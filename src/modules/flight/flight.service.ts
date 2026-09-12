@@ -7,6 +7,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../shared/erro
 import { newId } from "../../shared/id"
 import { page, type Page, type PaginationQuery } from "../../shared/pagination"
 import { auditService, type AuditActor } from "../audit/audit.service"
+import { notificationService } from "../notification/notification.service"
 import type {
 	CreateFlightInput,
 	ListFlightAssignmentsQuery,
@@ -109,6 +110,7 @@ export const flightService = {
 			throw new ConflictError(`Kỳ này đã có chuyến ${nextCode} cho chiều đã chọn.`)
 		}
 
+		const affected = (await flightRepository.listAssignments(eventId)).filter((row) => row.assignment.flightId === flightId).map((row) => row.assignment.registrationId)
 		return db.transaction(async (tx) => {
 			const updated = await flightRepository.update(
 				eventId,
@@ -130,6 +132,7 @@ export const flightService = {
 				},
 				tx,
 			)
+			await notificationService.scheduleChangesIfPublished(eventId, affected, "flight", tx)
 			const warnings =
 				after.assignedCount > after.capacity
 					? [`Chuyến ${after.code} đang vượt ${after.assignedCount - after.capacity} chỗ.`]
@@ -360,6 +363,7 @@ export const flightService = {
 				},
 				tx,
 			)
+			await notificationService.scheduleChangesIfPublished(eventId, registrationIds, "flight", tx)
 			return { updated: registrations.length, warnings: [...new Set(warnings)] }
 		})
 	},

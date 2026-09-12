@@ -6,16 +6,24 @@ import { allocationService } from "../modules/allocation/allocation.service"
 import { closeDatabase, db, openDatabase } from "./client"
 import {
 	allocationRun,
+	announcement,
 	employeeProfile,
 	event,
 	flight,
 	flightAssignment,
+	hotel,
 	notification,
 	pickupPoint,
 	registration,
 	registrationTransportNeed,
+	room,
+	roomAssignment,
+	roomType,
+	scheduleItem,
 	team,
 	user,
+	vehicle,
+	vehicleAssignment,
 	workLocation,
 } from "./schema"
 
@@ -109,6 +117,15 @@ async function seedBaseData() {
 
 	const currentEvent = (await db.select().from(event).where(eq(event.code, EVENT_CODE)).limit(1))[0]
 	const eventId = currentEvent?.id ?? "demo-s3-event"
+	if (currentEvent) {
+		// The smoke test deliberately republishes this one demo edition. Remove its
+		// generated S5 mail before reseeding so repeated local acceptance runs do not
+		// leave hundreds of duplicate rows in the admin notification screen.
+		await db.delete(notification).where(and(
+			eq(notification.eventId, eventId),
+			inArray(notification.template, ["information_published", "assignment_changed"]),
+		))
+	}
 	if (!currentEvent) {
 		await db.insert(event).values({
 			id: eventId,
@@ -123,8 +140,10 @@ async function seedBaseData() {
 				allocationWeights: { teamTogetherWeight: 100, shiftPreferenceWeight: 10 },
 			},
 		})
-	} else if (currentEvent.status !== "allocation_processing") {
-		await db.update(event).set({ status: "allocation_processing" }).where(eq(event.id, eventId))
+	} else if (currentEvent.status !== "allocation_processing" || currentEvent.publishedAt) {
+		// Demo seed deliberately returns the edition to the pre-publication state so
+		// the S5 smoke test can prove both the 409 guard and the first-publication fan-out.
+		await db.update(event).set({ status: "allocation_processing", publishedAt: null }).where(eq(event.id, eventId))
 	}
 
 	await db.insert(pickupPoint).values([
@@ -197,6 +216,7 @@ async function seedBaseData() {
 async function ensureCommittedAllocation(eventId: string) {
 	const existing = (await db.select({ value: count() }).from(allocationRun).where(and(
 		eq(allocationRun.eventId, eventId),
+		eq(allocationRun.type, "flight"),
 		eq(allocationRun.status, "committed"),
 	)))[0]?.value ?? 0
 	if (existing > 0) return
@@ -206,6 +226,69 @@ async function ensureCommittedAllocation(eventId: string) {
 	const actor = { id: admin.id, name: admin.name, email: admin.email }
 	const preview = await allocationService.preview(eventId, { type: "flight" }, actor)
 	await allocationService.commit(eventId, preview.id, actor)
+}
+
+async function seedS4Data(eventId: string) {
+	const vehicles = [
+		{ id: "demo-bus-hn-out", code: "BUS-HN-01", name: "Xe Hà Nội 01", capacity: 12, leg: "origin_to_airport", pickupPointId: "demo-pickup-hn-office", gatherAt: "2026-10-16T00:00:00.000Z", departAt: "2026-10-16T00:20:00.000Z", destination: "Sân bay Nội Bài", leaderName: "Nguyễn Văn Hùng", leaderPhone: "0901000001" },
+		{ id: "demo-bus-hcm-out", code: "BUS-HCM-01", name: "Xe TP.HCM 01", capacity: 8, leg: "origin_to_airport", pickupPointId: "demo-pickup-hcm-office", gatherAt: "2026-10-16T01:00:00.000Z", departAt: "2026-10-16T01:20:00.000Z", destination: "Sân bay Tân Sơn Nhất", leaderName: "Trần Minh Tuấn", leaderPhone: "0901000002" },
+		{ id: "demo-bus-airport-hotel-1", code: "BUS-DN-01", name: "Xe Đà Nẵng 01", capacity: 10, leg: "airport_to_hotel", pickupPointId: null, gatherAt: "2026-10-16T03:00:00.000Z", departAt: "2026-10-16T03:20:00.000Z", destination: "Ocean View Resort", leaderName: "Lê Thanh Hải", leaderPhone: "0901000003" },
+		{ id: "demo-bus-airport-hotel-2", code: "BUS-DN-02", name: "Xe Đà Nẵng 02", capacity: 10, leg: "airport_to_hotel", pickupPointId: null, gatherAt: "2026-10-16T05:00:00.000Z", departAt: "2026-10-16T05:20:00.000Z", destination: "Ocean View Resort", leaderName: "Phạm Thu Trang", leaderPhone: "0901000004" },
+		{ id: "demo-bus-hotel-airport-1", code: "BUS-DN-03", name: "Xe Đà Nẵng 03", capacity: 10, leg: "hotel_to_airport", pickupPointId: null, gatherAt: "2026-10-19T06:00:00.000Z", departAt: "2026-10-19T06:20:00.000Z", destination: "Sân bay Đà Nẵng", leaderName: "Đỗ Quốc Anh", leaderPhone: "0901000005" },
+		{ id: "demo-bus-hotel-airport-2", code: "BUS-DN-04", name: "Xe Đà Nẵng 04", capacity: 10, leg: "hotel_to_airport", pickupPointId: null, gatherAt: "2026-10-19T09:00:00.000Z", departAt: "2026-10-19T09:20:00.000Z", destination: "Sân bay Đà Nẵng", leaderName: "Vũ Ngọc Hà", leaderPhone: "0901000006" },
+		{ id: "demo-bus-hn-return", code: "BUS-HN-02", name: "Xe Hà Nội 02", capacity: 12, leg: "airport_to_origin", pickupPointId: "demo-pickup-hn-office", gatherAt: "2026-10-19T09:30:00.000Z", departAt: "2026-10-19T09:50:00.000Z", destination: "Văn phòng Hà Nội", leaderName: "Bùi Đức Nam", leaderPhone: "0901000007" },
+		{ id: "demo-bus-hcm-return", code: "BUS-HCM-02", name: "Xe TP.HCM 02", capacity: 8, leg: "airport_to_origin", pickupPointId: "demo-pickup-hcm-office", gatherAt: "2026-10-19T14:30:00.000Z", departAt: "2026-10-19T14:50:00.000Z", destination: "Văn phòng TP.HCM", leaderName: "Hoàng Minh Long", leaderPhone: "0901000008" },
+	] as const
+	await db.insert(vehicle).values(vehicles.map((item) => ({
+		...item, eventId, gatherAt: new Date(item.gatherAt), departAt: new Date(item.departAt), note: "Dữ liệu demo S4",
+	}))).onConflictDoNothing()
+
+	await db.insert(hotel).values({ id: "demo-hotel-ocean", eventId, name: "Ocean View Resort", address: "268 Võ Nguyên Giáp, Đà Nẵng" }).onConflictDoNothing()
+	await db.insert(roomType).values([
+		{ id: "demo-room-type-twin", eventId, hotelId: "demo-hotel-ocean", name: "Twin", capacity: 2 },
+		{ id: "demo-room-type-triple", eventId, hotelId: "demo-hotel-ocean", name: "Triple", capacity: 3 },
+	]).onConflictDoNothing()
+	const rooms = [
+		["demo-room-a101", "A101", "demo-room-type-twin", 2], ["demo-room-a102", "A102", "demo-room-type-twin", 2],
+		["demo-room-a103", "A103", "demo-room-type-twin", 2], ["demo-room-a104", "A104", "demo-room-type-twin", 2],
+		["demo-room-b201", "B201", "demo-room-type-triple", 3], ["demo-room-b202", "B202", "demo-room-type-triple", 3],
+	] as const
+	await db.insert(room).values(rooms.map(([id, code, roomTypeId, capacity]) => ({ id, eventId, hotelId: "demo-hotel-ocean", roomTypeId, code, capacity }))).onConflictDoNothing()
+
+	const admin = (await db.select().from(user).where(eq(user.role, "super_admin")).limit(1))[0]
+	if (!admin) throw new Error("Chưa có super_admin. Chạy pnpm seed:admin trước.")
+	const roomIds = rooms.flatMap(([id, , , capacity]) => Array.from({ length: capacity }, () => id))
+	await db.insert(roomAssignment).values(roomIds.slice(0, 12).map((roomId, index) => ({
+		id: `demo-room-assignment-${String(index + 1).padStart(2, "0")}`,
+		eventId, roomId, registrationId: `demo-registration-${String(index + 1).padStart(2, "0")}`,
+		source: "import" as const, locked: true, assignedBy: admin.id, assignedAt: now,
+	}))).onConflictDoNothing()
+}
+
+async function ensureCommittedVehicleAllocation(eventId: string) {
+	const existing = (await db.select({ value: count() }).from(allocationRun).where(and(
+		eq(allocationRun.eventId, eventId), eq(allocationRun.type, "vehicle"), eq(allocationRun.status, "committed"),
+	)))[0]?.value ?? 0
+	if (existing > 0) return
+	const admin = (await db.select().from(user).where(eq(user.role, "super_admin")).limit(1))[0]
+	if (!admin) throw new Error("Chưa có super_admin. Chạy pnpm seed:admin trước.")
+	const actor = { id: admin.id, name: admin.name, email: admin.email }
+	const preview = await allocationService.preview(eventId, { type: "vehicle" }, actor)
+	await allocationService.commit(eventId, preview.id, actor)
+}
+
+async function seedS5Content(eventId: string) {
+	await db.insert(scheduleItem).values([
+		{ id: "demo-schedule-01", eventId, day: 1, startAt: new Date("2026-10-16T07:00:00.000Z"), endAt: new Date("2026-10-16T08:00:00.000Z"), title: "Nhận phòng và ăn trưa", description: "Nhận vòng tay, chìa khóa phòng và dùng bữa tại nhà hàng chính.", location: "Ocean View Resort", sortOrder: 10 },
+		{ id: "demo-schedule-02", eventId, day: 1, startAt: new Date("2026-10-16T09:00:00.000Z"), endAt: new Date("2026-10-16T11:00:00.000Z"), title: "Khai mạc & hoạt động Team", description: "Tập trung theo màu Team tại khu vực sân khấu.", location: "Bãi biển trung tâm", sortOrder: 20 },
+		{ id: "demo-schedule-03", eventId, day: 2, startAt: new Date("2026-10-17T01:00:00.000Z"), endAt: new Date("2026-10-17T04:00:00.000Z"), title: "Team Building", description: "Mang giày thể thao và có mặt trước 15 phút.", location: "Bãi biển trung tâm", sortOrder: 10 },
+		{ id: "demo-schedule-04", eventId, day: 2, startAt: new Date("2026-10-17T11:00:00.000Z"), endAt: new Date("2026-10-17T14:30:00.000Z"), title: "Gala Dinner", description: "Trang phục theo chủ đề của Team.", location: "Grand Ballroom", sortOrder: 20 },
+		{ id: "demo-schedule-05", eventId, day: 3, startAt: new Date("2026-10-18T01:00:00.000Z"), endAt: new Date("2026-10-18T05:00:00.000Z"), title: "Hoạt động tự do", description: "Tham quan thành phố theo nhóm.", location: "Đà Nẵng", sortOrder: 10 },
+	]).onConflictDoNothing()
+	await db.insert(announcement).values([
+		{ id: "demo-announcement-01", eventId, title: "Lưu ý hành lý", body: "CBNV vui lòng mang giấy tờ tùy thân và có mặt tại điểm tập trung trước giờ khởi hành 20 phút.", audience: "participants", publishedAt: new Date("2026-10-10T02:00:00.000Z") },
+		{ id: "demo-announcement-02", eventId, title: "Chuẩn bị trang phục Team", body: "Mỗi Team chủ động chuẩn bị trang phục theo màu đã thống nhất cho hoạt động ngày 2.", audience: "participants", publishedAt: null },
+	]).onConflictDoNothing()
 }
 
 async function printSummary(eventId: string) {
@@ -221,6 +304,13 @@ async function printSummary(eventId: string) {
 		assignments: (await db.select({ value: count() }).from(flightAssignment).where(eq(flightAssignment.eventId, eventId)))[0]?.value,
 		allocationRuns: (await db.select({ value: count() }).from(allocationRun).where(eq(allocationRun.eventId, eventId)))[0]?.value,
 		notifications: (await db.select({ value: count() }).from(notification).where(eq(notification.eventId, eventId)))[0]?.value,
+		vehicles: (await db.select({ value: count() }).from(vehicle).where(eq(vehicle.eventId, eventId)))[0]?.value,
+		vehicleAssignments: (await db.select({ value: count() }).from(vehicleAssignment).where(eq(vehicleAssignment.eventId, eventId)))[0]?.value,
+		hotels: (await db.select({ value: count() }).from(hotel).where(eq(hotel.eventId, eventId)))[0]?.value,
+		rooms: (await db.select({ value: count() }).from(room).where(eq(room.eventId, eventId)))[0]?.value,
+		roomAssignments: (await db.select({ value: count() }).from(roomAssignment).where(eq(roomAssignment.eventId, eventId)))[0]?.value,
+		scheduleItems: (await db.select({ value: count() }).from(scheduleItem).where(eq(scheduleItem.eventId, eventId)))[0]?.value,
+		announcements: (await db.select({ value: count() }).from(announcement).where(eq(announcement.eventId, eventId)))[0]?.value,
 	}
 	console.log(JSON.stringify({ eventId, eventCode: EVENT_CODE, employeePassword: DEMO_PASSWORD, ...tableCounts }, null, 2))
 }
@@ -229,6 +319,9 @@ async function main() {
 	await openDatabase()
 	const eventId = await seedBaseData()
 	await ensureCommittedAllocation(eventId)
+	await seedS4Data(eventId)
+	await ensureCommittedVehicleAllocation(eventId)
+	await seedS5Content(eventId)
 	await printSummary(eventId)
 }
 

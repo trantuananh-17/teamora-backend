@@ -70,6 +70,8 @@ async function processNotification(notif: NotificationRow): Promise<void> {
           | "flight"
           | "vehicle"
           | "room"
+          | "schedule"
+          | "announcement"
         const rendered = renderAssignmentChanged(changeType ?? "flight")
         subject = rendered.subject
         html = rendered.html

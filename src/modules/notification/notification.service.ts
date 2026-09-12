@@ -1,5 +1,7 @@
 import { db, type DbExecutor } from "../../db/client"
 import { notification } from "../../db/schema"
+import { event } from "../../db/schema"
+import { eq } from "drizzle-orm"
 import { newId } from "../../shared/id"
 import type { Page, PaginationQuery } from "../../shared/pagination"
 import { page } from "../../shared/pagination"
@@ -132,7 +134,7 @@ export const notificationService = {
   async scheduleAssignmentChanged(
     eventId: string,
     registrationId: string,
-    changeType: "flight" | "vehicle" | "room",
+    changeType: "flight" | "vehicle" | "room" | "schedule" | "announcement",
     executor: DbExecutor = db,
   ): Promise<void> {
     await this.schedule(
@@ -145,5 +147,18 @@ export const notificationService = {
       },
       executor,
     )
+  },
+
+  async scheduleChangesIfPublished(
+    eventId: string,
+    registrationIds: string[],
+    changeType: "flight" | "vehicle" | "room" | "schedule" | "announcement",
+    executor: DbExecutor = db,
+  ): Promise<void> {
+    const edition = (await executor.select({ status: event.status }).from(event).where(eq(event.id, eventId)).limit(1))[0]
+    if (!edition || !["information_published", "event_started"].includes(edition.status)) return
+    for (const registrationId of new Set(registrationIds)) {
+      await this.scheduleAssignmentChanged(eventId, registrationId, changeType, executor)
+    }
   },
 }

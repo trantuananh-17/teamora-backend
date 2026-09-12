@@ -15,6 +15,8 @@ import { notificationRoutes } from "../modules/notification/notification.routes"
 import { registrationRoutes } from "../modules/registration/registration.routes"
 import { teamRoutes } from "../modules/team/team.routes"
 import { workLocationRoutes } from "../modules/work-location/work-location.routes"
+import { contentRoutes } from "../modules/content/content.routes"
+import { dashboardRoutes, journeyRoutes } from "../modules/journey/journey.routes"
 import { errorHandler } from "./middleware/error-handler"
 import { requestContext } from "./middleware/request-context"
 import { attachSession } from "./middleware/session"
@@ -84,6 +86,9 @@ export function createApp() {
 	app.route("/v1/events", vehicleRoutes)
 	app.route("/v1/events", accommodationRoutes)
 	app.route("/v1/events", allocationRoutes)
+	app.route("/v1/events", contentRoutes)
+	app.route("/v1/events", dashboardRoutes)
+	app.route("/v1", journeyRoutes)
 
 	app.notFound((c) =>
 		c.json(

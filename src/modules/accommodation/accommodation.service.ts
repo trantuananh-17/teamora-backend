@@ -1,9 +1,10 @@
 import { db } from "../../db/client"
 import { roomAssignmentColumns } from "../../excel/room-assignment.map"
 import { readSheet } from "../../excel/reader"
-import { writeSheet } from "../../excel/writer"
+import { writeSheet, writeWorkbook } from "../../excel/writer"
 import { ConflictError, NotFoundError, ValidationError } from "../../shared/errors"
 import { auditService, type AuditActor } from "../audit/audit.service"
+import { notificationService } from "../notification/notification.service"
 import type { CreateHotelInput, CreateRoomInput, CreateRoomTypeInput, ListRoomsQuery, UpdateHotelInput, UpdateRoomInput, UpdateRoomTypeInput } from "./accommodation.dto"
 import { accommodationRepository } from "./accommodation.repository"
 import { validateRoomAssignments } from "./room-assignment.validate"
@@ -120,11 +121,26 @@ export const accommodationService = {
 		await db.transaction(async (tx) => {
 			await accommodationRepository.replaceImportedAssignments(eventId, actor.id, outcome.records, tx)
 			await auditService.record({ eventId, actor, entity: "room_assignment", entityId: eventId, action: "import", after: { fileName, total: outcome.records.length } }, tx)
+			await notificationService.scheduleChangesIfPublished(eventId, outcome.records.map((row) => row.registrationId), "room", tx)
 		})
 		return { fileName, total: outcome.records.length }
 	},
 	async exportAssignments(eventId: string) {
 		const rows = await accommodationRepository.listAssignments(eventId)
 		return writeSheet("Phân phòng", roomAssignmentColumns, rows.map((row) => ({ employeeCode: row.employeeCode ?? "", hotelName: row.hotel.name, roomCode: row.room.code })))
+	},
+	async exportWorkbook(eventId: string, actor: AuditActor) {
+		const [hotels, roomTypes, rooms, assignments] = await Promise.all([
+			accommodationRepository.listHotels(eventId), accommodationRepository.listRoomTypes(eventId),
+			accommodationRepository.listRooms(eventId), accommodationRepository.listAssignments(eventId),
+		])
+		await auditService.record({ eventId, actor, entity: "accommodation", entityId: eventId, action: "export", after: { hotels: hotels.length, rooms: rooms.length, assignments: assignments.length } })
+		const hotelById = new Map(hotels.map((row) => [row.hotel.id, row.hotel]))
+		return writeWorkbook([
+			{ name: "Khách sạn", columns: [{ key: "name", header: "Khách sạn", required: true }, { key: "address", header: "Địa chỉ", required: true }, { key: "roomCount", header: "Số phòng", required: true }], rows: hotels.map((row) => ({ name: row.hotel.name, address: row.hotel.address, roomCount: row.roomCount })) },
+			{ name: "Loại phòng", columns: [{ key: "hotel", header: "Khách sạn", required: true }, { key: "name", header: "Loại phòng", required: true }, { key: "capacity", header: "Sức chứa mặc định", required: true }], rows: roomTypes.map((row) => ({ hotel: hotelById.get(row.hotelId)?.name ?? "", name: row.name, capacity: row.capacity })) },
+			{ name: "Phòng", columns: [{ key: "hotel", header: "Khách sạn", required: true }, { key: "code", header: "Mã phòng", required: true }, { key: "type", header: "Loại phòng", required: true }, { key: "capacity", header: "Sức chứa", required: true }, { key: "assigned", header: "Đã phân", required: true }], rows: rooms.map((row) => ({ hotel: row.hotel.name, code: row.room.code, type: row.roomType.name, capacity: row.room.capacity, assigned: row.assignedCount })) },
+			{ name: "Phân phòng", columns: roomAssignmentColumns, rows: assignments.map((row) => ({ employeeCode: row.employeeCode ?? "", hotelName: row.hotel.name, roomCode: row.room.code })) },
+		])
 	},
 }

@@ -23,8 +23,10 @@ const configurableStatus = requireEventStatus(
 	"registration_open",
 	"registration_closed",
 	"allocation_processing",
+	"information_published",
+	"event_started",
 )
-const allocationStatus = requireEventStatus("registration_closed", "allocation_processing")
+const allocationStatus = requireEventStatus("registration_closed", "allocation_processing", "information_published", "event_started")
 
 flightRoutes.post(
 	"/:eventId/flights",

@@ -29,4 +29,8 @@ export const accommodationController = {
 		const event = requireEventScope(c); const output = await accommodationService.exportAssignments(event.id)
 		return new Response(new Uint8Array(output), { headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "content-disposition": `attachment; filename="room-assignments-${event.code}.xlsx"` } })
 	},
+	async exportWorkbook(c: AppContext) {
+		const event = requireEventScope(c); const output = await accommodationService.exportWorkbook(event.id, auditActor(c))
+		return new Response(new Uint8Array(output), { headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "content-disposition": `attachment; filename="accommodations-${event.code}.xlsx"` } })
+	},
 }

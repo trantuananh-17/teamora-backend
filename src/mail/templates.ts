@@ -190,13 +190,18 @@ export function renderInformationPublished(): {
 /**
  * §11 - Email thông báo thay đổi phân bổ
  */
-export function renderAssignmentChanged(changeType: "flight" | "vehicle" | "room"): {
+export function renderAssignmentChanged(changeType: "flight" | "vehicle" | "room" | "schedule" | "announcement"): {
   subject: string
   html: string
 } {
   const journeyLink = `${env.appBaseUrl}/`
-  const changeLabel =
-    changeType === "flight" ? "chuyến bay" : changeType === "vehicle" ? "xe đưa đón" : "phòng"
+  const changeLabel = {
+    flight: "chuyến bay",
+    vehicle: "xe đưa đón",
+    room: "phòng",
+    schedule: "lịch trình chung",
+    announcement: "thông báo quan trọng",
+  }[changeType]
 
   return {
     subject: `Thay đổi ${changeLabel} - Team Building`,

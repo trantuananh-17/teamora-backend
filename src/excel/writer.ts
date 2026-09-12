@@ -21,3 +21,26 @@ export async function writeSheet(
 	const output = await workbook.xlsx.writeBuffer()
 	return Buffer.from(output)
 }
+
+export interface WorkbookSheet {
+	name: string
+	columns: readonly ColumnSpec[]
+	rows: readonly Record<string, string | number | null>[]
+}
+
+/** Writes a multi-sheet operational workbook for cross-table exports. */
+export async function writeWorkbook(sheets: readonly WorkbookSheet[]): Promise<Buffer> {
+	const workbook = new ExcelJS.Workbook()
+	for (const definition of sheets) {
+		const sheet = workbook.addWorksheet(definition.name)
+		sheet.columns = definition.columns.map((column) => ({
+			header: column.header,
+			key: column.key,
+			width: Math.max(14, column.header.length + 4),
+		}))
+		for (const row of definition.rows) sheet.addRow(row)
+		sheet.getRow(1).font = { bold: true }
+		sheet.views = [{ state: "frozen", ySplit: 1 }]
+	}
+	return Buffer.from(await workbook.xlsx.writeBuffer())
+}

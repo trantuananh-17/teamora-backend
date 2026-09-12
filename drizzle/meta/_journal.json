@@ -57,6 +57,13 @@
       "when": 1789194479826,
       "tag": "0007_lovely_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789220214716,
+      "tag": "0008_mysterious_kat_farrell",
+      "breakpoints": true
     }
   ]
 }
