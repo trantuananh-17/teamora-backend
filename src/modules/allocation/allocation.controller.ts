@@ -12,8 +12,8 @@ export const allocationController = {
 
 	async list(c: AppContext) {
 		const event = requireEventScope(c)
-		listAllocationRunsQuerySchema.parse(c.req.query())
-		return c.json({ items: await allocationService.list(event.id) })
+		const query = listAllocationRunsQuerySchema.parse(c.req.query())
+		return c.json({ items: await allocationService.list(event.id, query.type) })
 	},
 
 	async get(c: AppContext) {

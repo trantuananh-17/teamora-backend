@@ -2,12 +2,14 @@ import { Hono } from "hono"
 import { cors } from "hono/cors"
 
 import { auth } from "../auth/auth"
+import { accommodationRoutes } from "../modules/accommodation/accommodation.routes"
 import { env } from "../config/env"
 import { checkDatabaseConnection } from "../db/client"
 import { employeeRoutes } from "../modules/employee/employee.routes"
 import { eventRoutes } from "../modules/event/event.routes"
 import { allocationRoutes } from "../modules/allocation/allocation.routes"
 import { flightRoutes } from "../modules/flight/flight.routes"
+import { vehicleRoutes } from "../modules/vehicle/vehicle.routes"
 import { pickupPointRoutes } from "../modules/pickup-point/pickup-point.routes"
 import { notificationRoutes } from "../modules/notification/notification.routes"
 import { registrationRoutes } from "../modules/registration/registration.routes"
@@ -79,6 +81,8 @@ export function createApp() {
 	app.route("/v1/events", registrationRoutes)
 	app.route("/v1/events", notificationRoutes)
 	app.route("/v1/events", flightRoutes)
+	app.route("/v1/events", vehicleRoutes)
+	app.route("/v1/events", accommodationRoutes)
 	app.route("/v1/events", allocationRoutes)
 
 	app.notFound((c) =>

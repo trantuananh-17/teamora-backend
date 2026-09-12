@@ -5,6 +5,15 @@ import { user } from "./auth.schema"
 import { team } from "./master.schema"
 import { pickupPoint } from "./master.schema"
 
+export const TRANSPORT_LEGS = [
+  "origin_to_airport",
+  "airport_to_hotel",
+  "hotel_to_airport",
+  "airport_to_origin",
+] as const
+
+export type TransportLeg = (typeof TRANSPORT_LEGS)[number]
+
 /**
  * Registration - CBNV đăng ký tham gia một kỳ Team Building
  * Khóa nối trung tâm: unique(eventId, userId)
@@ -70,9 +79,7 @@ export const registrationTransportNeed = sqliteTable(
       .references(() => registration.id, { onDelete: "cascade" }),
 
     // §7.1 - 4 chặng cố định
-    leg: text("leg")
-      .$type<"origin_to_airport" | "airport_to_hotel" | "hotel_to_airport" | "airport_to_origin">()
-      .notNull(),
+    leg: text("leg").$type<TransportLeg>().notNull(),
 
     // §4.5 - Có/Không cần xe
     needed: integer("needed", { mode: "boolean" }).notNull(),

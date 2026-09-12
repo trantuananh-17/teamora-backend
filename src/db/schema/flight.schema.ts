@@ -3,7 +3,7 @@ import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-o
 
 import { user } from "./auth.schema"
 import { event } from "./event.schema"
-import { registration } from "./registration.schema"
+import { registration, type TransportLeg } from "./registration.schema"
 
 export const FLIGHT_DIRECTIONS = ["outbound", "return"] as const
 export const FLIGHT_SHIFTS = ["shift_1", "shift_2"] as const
@@ -45,6 +45,22 @@ export interface StoredFlightAllocationPlan {
 	}[]
 }
 
+export interface StoredVehicleAllocationPlan {
+	assignments: {
+		registrationId: string
+		vehicleId: string
+		leg: TransportLeg
+		flags: AllocationFlag[]
+	}[]
+	unassigned: {
+		registrationId: string
+		leg: TransportLeg
+		reason: "missing_flight" | "unassigned"
+	}[]
+}
+
+export type StoredAllocationPlan = StoredFlightAllocationPlan | StoredVehicleAllocationPlan
+
 /** One explainable preview/commit lifecycle, shared by all allocator types. */
 export const allocationRun = sqliteTable(
 	"allocation_run",
@@ -58,7 +74,7 @@ export const allocationRun = sqliteTable(
 		params: text("params", { mode: "json" }).$type<Record<string, number>>().notNull(),
 		stats: text("stats", { mode: "json" }).$type<AllocationStats>().notNull(),
 		// Preview must survive a page reload without touching the live assignment table.
-		plan: text("plan", { mode: "json" }).$type<StoredFlightAllocationPlan>().notNull(),
+		plan: text("plan", { mode: "json" }).$type<StoredAllocationPlan>().notNull(),
 		createdBy: text("created_by")
 			.notNull()
 			.references(() => user.id, { onDelete: "restrict" }),

@@ -6,7 +6,7 @@ import type {
 	AllocationRunStatus,
 	AllocationRunType,
 	AllocationStats,
-	StoredFlightAllocationPlan,
+	StoredAllocationPlan,
 } from "../../db/schema/flight.schema"
 
 export type AllocationRunRow = typeof allocationRun.$inferSelect
@@ -19,7 +19,7 @@ export const allocationRepository = {
 			type: AllocationRunType
 			params: Record<string, number>
 			stats: AllocationStats
-			plan: StoredFlightAllocationPlan
+			plan: StoredAllocationPlan
 			createdBy: string
 		},
 		executor: DbExecutor = db,
