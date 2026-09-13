@@ -3,6 +3,7 @@ import { cors } from "hono/cors"
 
 import { auth } from "../auth/auth"
 import { accommodationRoutes } from "../modules/accommodation/accommodation.routes"
+import { auditRoutes } from "../modules/audit/audit.routes"
 import { env } from "../config/env"
 import { checkDatabaseConnection } from "../db/client"
 import { employeeRoutes } from "../modules/employee/employee.routes"
@@ -16,6 +17,7 @@ import { registrationRoutes } from "../modules/registration/registration.routes"
 import { teamRoutes } from "../modules/team/team.routes"
 import { workLocationRoutes } from "../modules/work-location/work-location.routes"
 import { contentRoutes } from "../modules/content/content.routes"
+import { chatbotRoutes } from "../modules/chatbot/chatbot.routes"
 import { dashboardRoutes, journeyRoutes } from "../modules/journey/journey.routes"
 import { errorHandler } from "./middleware/error-handler"
 import { requestContext } from "./middleware/request-context"
@@ -69,6 +71,10 @@ export function createApp() {
 	// session handling, so it is mounted before our session middleware.
 	app.on(["GET", "POST"], "/v1/auth/*", (c) => auth.handler(c.req.raw))
 
+	// Machine-to-machine integration. It has its own credential and deliberately
+	// bypasses session lookup; the API key must never be sent by browser code.
+	app.route("/v1/integrations/chatbot", chatbotRoutes)
+
 	// Registered before the module routers, which is what makes it run for them:
 	// Hono applies middleware only to handlers added after it.
 	app.use("/v1/*", attachSession)
@@ -85,6 +91,7 @@ export function createApp() {
 	app.route("/v1/events", flightRoutes)
 	app.route("/v1/events", vehicleRoutes)
 	app.route("/v1/events", accommodationRoutes)
+	app.route("/v1/events", auditRoutes)
 	app.route("/v1/events", allocationRoutes)
 	app.route("/v1/events", contentRoutes)
 	app.route("/v1/events", dashboardRoutes)

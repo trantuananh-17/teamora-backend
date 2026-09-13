@@ -13,6 +13,17 @@ export const employeeController = {
     return c.json({ items: await employeeService.list() })
   },
 
+	async exportWorkbook(c: AppContext) {
+		const output = await employeeService.exportWorkbook(auditActor(c))
+		return new Response(new Uint8Array(output), {
+			status: 200,
+			headers: {
+				"content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				"content-disposition": 'attachment; filename="teamora-master-data.xlsx"',
+			},
+		})
+	},
+
   async import(c: AppContext) {
     const body = await c.req.parseBody()
     const file = body.file

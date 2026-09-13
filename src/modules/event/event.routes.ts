@@ -32,6 +32,9 @@ eventRoutes.get("/", requireOrganizer, (c) => eventController.list(c))
 eventRoutes.post("/", requireOrganizer, (c) => eventController.create(c))
 
 eventRoutes.get("/:eventId", requireOrganizer, eventScope, (c) => eventController.get(c))
+eventRoutes.get("/:eventId/export", requireOrganizer, eventScope, (c) =>
+	eventController.exportWorkbook(c),
+)
 eventRoutes.patch("/:eventId", requireOrganizer, eventScope, (c) => eventController.update(c))
 
 // §12 forward, one step at a time. The service refuses a skip and refuses a

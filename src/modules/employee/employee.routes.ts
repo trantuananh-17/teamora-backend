@@ -20,4 +20,5 @@ employeeRoutes.use("*", requireAuth)
 
 employeeRoutes.get("/me", (c) => employeeController.mine(c))
 employeeRoutes.get("/", requireOrganizer, (c) => employeeController.list(c))
+employeeRoutes.get("/export", requireOrganizer, (c) => employeeController.exportWorkbook(c))
 employeeRoutes.post("/import", requireOrganizer, (c) => employeeController.import(c))

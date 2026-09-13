@@ -1,6 +1,11 @@
 import "dotenv/config"
 import { z } from "zod"
 
+const optionalSecret = z.preprocess(
+	(value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+	z.string().trim().min(32).optional(),
+)
+
 /**
  * The only place in the codebase that reads `process.env`. Everything else
  * imports `env` from here, so a missing or malformed variable fails at startup
@@ -37,6 +42,9 @@ const envSchema = z.object({
 		.positive()
 		.default(5 * 1024 * 1024),
 	IMPORT_MAX_ROWS: z.coerce.number().int().positive().default(5_000),
+
+	/** Server-to-server credential. Empty/unset disables every chatbot route. */
+	CHATBOT_API_KEY: optionalSecret,
 
 	/**
 	 * Mail is off entirely when SMTP_HOST is unset, which is what lets tests and
@@ -87,6 +95,8 @@ export const env = {
 		maxFileBytes: raw.IMPORT_MAX_FILE_BYTES,
 		maxRows: raw.IMPORT_MAX_ROWS,
 	},
+
+	chatbot: { apiKey: raw.CHATBOT_API_KEY },
 
 	smtp: raw.SMTP_HOST
 		? {

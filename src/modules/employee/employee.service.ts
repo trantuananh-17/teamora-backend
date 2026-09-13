@@ -1,6 +1,7 @@
 import { db } from "../../db/client"
 import { employeeColumns } from "../../excel/employee.map"
 import { readSheet, type RowError } from "../../excel/reader"
+import { writeWorkbook } from "../../excel/writer"
 import { ValidationError } from "../../shared/errors"
 import { newId } from "../../shared/id"
 import { auditService, type AuditActor } from "../audit/audit.service"
@@ -35,6 +36,73 @@ export const employeeService = {
 
 	async list(): Promise<EmployeeListRow[]> {
 		return employeeRepository.list()
+	},
+
+	async exportWorkbook(actor: AuditActor): Promise<Buffer> {
+		const [employees, locations, teams] = await Promise.all([
+			employeeRepository.list(),
+			workLocationRepository.list(),
+			teamRepository.listAll(),
+		])
+		const locationById = new Map(locations.map((row) => [row.id, row.name]))
+		const sharedTeams = teams.filter((row) => row.eventId === null)
+		const teamById = new Map(sharedTeams.map((row) => [row.id, row.name]))
+
+		const output = await writeWorkbook([
+			{
+				name: "Cán bộ nhân viên",
+				columns: [
+					{ key: "employeeCode", header: "Mã nhân viên", required: true },
+					{ key: "name", header: "Họ tên", required: true },
+					{ key: "email", header: "Email", required: true },
+					{ key: "phone", header: "Điện thoại", required: true },
+					{ key: "workLocation", header: "Địa điểm làm việc", required: true },
+					{ key: "team", header: "Team mặc định", required: true },
+					{ key: "gender", header: "Giới tính", required: true },
+					{ key: "role", header: "Vai trò", required: true },
+					{ key: "active", header: "Đang làm việc", required: true },
+				],
+				rows: employees.map((row) => ({
+					employeeCode: row.employeeCode ?? "",
+					name: row.name,
+					email: row.email,
+					phone: row.phone ?? "",
+					workLocation: row.workLocationId ? locationById.get(row.workLocationId) ?? row.workLocationId : "",
+					team: row.defaultTeamId ? teamById.get(row.defaultTeamId) ?? row.defaultTeamId : "",
+					gender: row.gender ?? "",
+					role: row.role ?? "employee",
+					active: row.active === false ? "Không" : "Có",
+				})),
+			},
+			{
+				name: "Địa điểm làm việc",
+				columns: [
+					{ key: "name", header: "Tên địa điểm", required: true },
+					{ key: "active", header: "Đang dùng", required: true },
+					{ key: "sortOrder", header: "Thứ tự", required: true },
+				],
+				rows: locations.map((row) => ({ name: row.name, active: row.active ? "Có" : "Không", sortOrder: row.sortOrder })),
+			},
+			{
+				name: "Team dùng chung",
+				columns: [
+					{ key: "name", header: "Tên Team", required: true },
+					{ key: "active", header: "Đang dùng", required: true },
+					{ key: "sortOrder", header: "Thứ tự", required: true },
+				],
+				rows: sharedTeams.map((row) => ({ name: row.name, active: row.active ? "Có" : "Không", sortOrder: row.sortOrder })),
+			},
+		])
+
+		await auditService.record({
+			eventId: null,
+			actor,
+			entity: "employee",
+			entityId: "master-data",
+			action: "export",
+			after: { employees: employees.length, workLocations: locations.length, sharedTeams: sharedTeams.length },
+		})
+		return output
 	},
 
 	/**

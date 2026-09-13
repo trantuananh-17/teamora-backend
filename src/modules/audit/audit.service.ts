@@ -1,6 +1,11 @@
 import { db, type DbExecutor } from "../../db/client"
+import { writeSheet } from "../../excel/writer"
 import { newId } from "../../shared/id"
+import type { Page, PaginationQuery } from "../../shared/pagination"
+import { page } from "../../shared/pagination"
+import type { ListAuditLogsQuery } from "./audit.dto"
 import { auditRepository } from "./audit.repository"
+import type { AuditLogRow } from "./audit.repository"
 
 /**
  * Who did it. Captured as values rather than an id, because the trail has to
@@ -32,10 +37,6 @@ export interface AuditEntry {
 	reason?: string
 }
 
-/**
- * No routes, no controller, no DTO — this module has no endpoint of its own.
- * Reading the trail is a screen in S6 and will hang off the event module.
- */
 export const auditService = {
 	/**
 	 * Takes the executor so it can join the caller's transaction. It nearly always
@@ -60,4 +61,63 @@ export const auditService = {
 			executor,
 		)
 	},
+
+	async list(
+		eventId: string,
+		query: ListAuditLogsQuery,
+		pagination: PaginationQuery,
+	): Promise<Page<AuditLogRow> & { filters: { entities: string[]; actions: string[] } }> {
+		const [result, filters] = await Promise.all([
+			auditRepository.listForEvent(eventId, query, pagination),
+			auditRepository.facets(eventId),
+		])
+		return { ...page(result.items, result.total, pagination), filters }
+	},
+
+	async exportExcel(
+		eventId: string,
+		query: ListAuditLogsQuery,
+		actor: AuditActor,
+	): Promise<Buffer> {
+		const rows = await auditRepository.listAllForEvent(eventId, query)
+		const output = await writeSheet(
+			"Nhật ký thay đổi",
+			[
+				{ key: "createdAt", header: "Thời điểm", required: true },
+				{ key: "actorName", header: "Người thao tác", required: true },
+				{ key: "actorEmail", header: "Email", required: true },
+				{ key: "entity", header: "Đối tượng", required: true },
+				{ key: "entityId", header: "ID đối tượng", required: true },
+				{ key: "action", header: "Hành động", required: true },
+				{ key: "reason", header: "Lý do", required: true },
+				{ key: "before", header: "Trước thay đổi", required: true },
+				{ key: "after", header: "Sau thay đổi", required: true },
+			],
+			rows.map((row) => ({
+				createdAt: row.createdAt.toISOString(),
+				actorName: row.actorName ?? "Hệ thống",
+				actorEmail: row.actorEmail ?? "",
+				entity: row.entity,
+				entityId: row.entityId,
+				action: row.action,
+				reason: row.reason ?? "",
+				before: jsonCell(row.before),
+				after: jsonCell(row.after),
+			})),
+		)
+
+		await this.record({
+			eventId,
+			actor,
+			entity: "audit_log",
+			entityId: eventId,
+			action: "export",
+			after: { rows: rows.length, filters: query },
+		})
+		return output
+	},
+}
+
+function jsonCell(value: unknown): string {
+	return value === null || value === undefined ? "" : JSON.stringify(value)
 }

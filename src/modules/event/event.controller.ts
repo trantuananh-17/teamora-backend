@@ -3,6 +3,7 @@ import { auditActor, requireEventScope } from "../../api/types"
 import { paginationQuerySchema } from "../../shared/pagination"
 import { changeStatusSchema, createEventSchema, updateEventSchema } from "./event.dto"
 import { eventService } from "./event.service"
+import { eventExportService } from "./event-export.service"
 
 /**
  * Parse the DTO, call exactly one service method, shape the response. No
@@ -24,6 +25,18 @@ export const eventController = {
 		// Already resolved and proven to exist by `eventScope`; re-fetching would
 		// be a second query for the same row.
 		return c.json(requireEventScope(c))
+	},
+
+	async exportWorkbook(c: AppContext) {
+		const event = requireEventScope(c)
+		const output = await eventExportService.exportWorkbook(event.id, auditActor(c))
+		return new Response(new Uint8Array(output), {
+			status: 200,
+			headers: {
+				"content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				"content-disposition": `attachment; filename="teamora-${event.code}.xlsx"`,
+			},
+		})
 	},
 
 	async create(c: AppContext) {

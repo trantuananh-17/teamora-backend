@@ -1,0 +1,66 @@
+# Backend development stack. This file belongs to this repository so cloning
+# teamora-backend is enough to run the API, migrations, SQLite and local mail.
+
+name: teamora-backend
+
+services:
+  migrate:
+    image: teamora-backend:local
+    command: ["node", "dist/db/migrate.js"]
+    environment: &api-environment
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_PATH: /app/data/teamora.db
+      API_BASE_URL: http://localhost:${TEAMORA_API_PORT:-8080}
+      APP_BASE_URL: http://localhost:${TEAMORA_WEB_PORT:-3000}
+      TRUSTED_ORIGINS: http://localhost:${TEAMORA_WEB_PORT:-3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-teamora-local-only-secret-change-me}
+      IMPORT_MAX_FILE_BYTES: ${IMPORT_MAX_FILE_BYTES:-5242880}
+      IMPORT_MAX_ROWS: ${IMPORT_MAX_ROWS:-5000}
+      CHATBOT_API_KEY: ${CHATBOT_API_KEY:-}
+      SMTP_HOST: maildev
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      MAIL_FROM: "Teamora Local <no-reply@teamora.local>"
+    volumes:
+      - teamora-data:/app/data
+    restart: "no"
+
+  api:
+    image: teamora-backend:local
+    build:
+      context: .
+    restart: unless-stopped
+    environment: *api-environment
+    volumes:
+      - teamora-data:/app/data
+    ports:
+      - "${TEAMORA_API_BIND:-127.0.0.1}:${TEAMORA_API_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      maildev:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+
+  maildev:
+    image: maildev/maildev:2.2.1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILDEV_UI_PORT:-1080}:1080"
+      - "127.0.0.1:${MAILDEV_SMTP_PORT:-1025}:1025"
+
+volumes:
+  teamora-data:

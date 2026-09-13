@@ -90,10 +90,13 @@ jobs:
       - name: .env.example covers every required variable
         run: |
           missing=0
-          for key in $(grep -oE '^\s+[A-Z][A-Z0-9_]*:' src/config/env.ts | tr -d ' :'); do
+          for key in $(sed -nE 's/^[[:space:]]+([A-Z][A-Z0-9_]*):.*/\1/p' src/config/env.ts); do
             if ! grep -q "^${key}=" .env.example; then
               echo "::error::$key is required by src/config/env.ts but missing from .env.example"
               missing=1
             fi
           done
           exit $missing
+
+      - name: Docker Compose is valid
+        run: docker compose config --quiet
