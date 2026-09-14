@@ -19,11 +19,11 @@ pickupPointRoutes.use("*", requireAuth)
 
 pickupPointRoutes.get("/:eventId/pickup-points", eventScope, (c) => pickupPointController.list(c))
 pickupPointRoutes.post("/:eventId/pickup-points", requireOrganizer, eventScope, (c) =>
-  pickupPointController.create(c),
+	pickupPointController.create(c),
 )
 pickupPointRoutes.patch(
-  "/:eventId/pickup-points/:pickupPointId",
-  requireOrganizer,
-  eventScope,
-  (c) => pickupPointController.update(c),
+	"/:eventId/pickup-points/:pickupPointId",
+	requireOrganizer,
+	eventScope,
+	(c) => pickupPointController.update(c),
 )

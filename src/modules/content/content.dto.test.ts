@@ -3,7 +3,12 @@ import { createAnnouncementSchema, createScheduleItemSchema } from "./content.dt
 
 describe("S5 content validation", () => {
 	it("rejects a schedule item ending before it starts", () => {
-		const result = createScheduleItemSchema.safeParse({ day: 1, startAt: "2026-10-16T10:00:00Z", endAt: "2026-10-16T09:00:00Z", title: "Sai giờ" })
+		const result = createScheduleItemSchema.safeParse({
+			day: 1,
+			startAt: "2026-10-16T10:00:00Z",
+			endAt: "2026-10-16T09:00:00Z",
+			title: "Sai giờ",
+		})
 		expect(result.success).toBe(false)
 	})
 	it("keeps announcements as drafts unless explicitly published", () => {

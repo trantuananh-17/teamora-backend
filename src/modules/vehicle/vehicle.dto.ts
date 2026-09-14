@@ -2,7 +2,12 @@ import { z } from "zod"
 
 import { TRANSPORT_LEGS } from "../../db/schema/registration.schema"
 
-const codeSchema = z.string().trim().min(1).max(32).regex(/^[A-Za-z0-9_-]+$/)
+const codeSchema = z
+	.string()
+	.trim()
+	.min(1)
+	.max(32)
+	.regex(/^[A-Za-z0-9_-]+$/)
 const fields = {
 	code: codeSchema,
 	name: z.string().trim().min(1).max(120),
@@ -18,18 +23,26 @@ const fields = {
 }
 
 export const createVehicleSchema = z.object(fields).refine((row) => row.departAt >= row.gatherAt, {
-	message: "Giờ khởi hành không được trước giờ tập trung.", path: ["departAt"],
+	message: "Giờ khởi hành không được trước giờ tập trung.",
+	path: ["departAt"],
 })
 export type CreateVehicleInput = z.infer<typeof createVehicleSchema>
 
-export const updateVehicleSchema = z.object({
-	code: fields.code.optional(), name: fields.name.optional(), capacity: fields.capacity.optional(),
-	leg: fields.leg.optional(), gatherAt: fields.gatherAt.optional(), departAt: fields.departAt.optional(),
-	pickupPointId: z.string().min(1).nullable().optional(), destination: fields.destination.optional(),
-	leaderName: z.string().trim().max(120).nullable().optional(),
-	leaderPhone: z.string().trim().max(32).nullable().optional(),
-	note: z.string().trim().max(500).nullable().optional(),
-}).refine((row) => Object.keys(row).length > 0, "Không có trường nào để cập nhật.")
+export const updateVehicleSchema = z
+	.object({
+		code: fields.code.optional(),
+		name: fields.name.optional(),
+		capacity: fields.capacity.optional(),
+		leg: fields.leg.optional(),
+		gatherAt: fields.gatherAt.optional(),
+		departAt: fields.departAt.optional(),
+		pickupPointId: z.string().min(1).nullable().optional(),
+		destination: fields.destination.optional(),
+		leaderName: z.string().trim().max(120).nullable().optional(),
+		leaderPhone: z.string().trim().max(32).nullable().optional(),
+		note: z.string().trim().max(500).nullable().optional(),
+	})
+	.refine((row) => Object.keys(row).length > 0, "Không có trường nào để cập nhật.")
 export type UpdateVehicleInput = z.infer<typeof updateVehicleSchema>
 
 export const listVehiclesQuerySchema = z.object({
@@ -52,6 +65,7 @@ export const manualAssignVehicleSchema = z.object({
 export type ManualAssignVehicleInput = z.infer<typeof manualAssignVehicleSchema>
 
 export const setVehicleAssignmentLockSchema = z.object({
-	locked: z.boolean(), reason: z.string().trim().min(1).max(500),
+	locked: z.boolean(),
+	reason: z.string().trim().min(1).max(500),
 })
 export type SetVehicleAssignmentLockInput = z.infer<typeof setVehicleAssignmentLockSchema>

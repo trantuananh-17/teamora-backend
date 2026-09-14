@@ -21,40 +21,40 @@ registrationRoutes.use("*", requireAuth)
 
 // CBNV tạo/cập nhật đăng ký của chính mình. Yêu cầu: event.status = registration_open
 registrationRoutes.put(
-  "/:eventId/registrations/me",
-  eventScope,
-  requireEventStatus("registration_open"),
-  (c) => registrationController.createOrUpdate(c),
+	"/:eventId/registrations/me",
+	eventScope,
+	requireEventStatus("registration_open"),
+	(c) => registrationController.createOrUpdate(c),
 )
 
 // CBNV xem đăng ký của chính mình. Không yêu cầu trạng thái - employee luôn đọc được đăng ký mình
 registrationRoutes.get("/:eventId/registrations/me", eventScope, (c) =>
-  registrationController.getMyRegistration(c),
+	registrationController.getMyRegistration(c),
 )
 
 // BTC xem danh sách đăng ký (organizer only)
 registrationRoutes.get("/:eventId/registrations", eventScope, requireOrganizer, (c) =>
-  registrationController.list(c),
+	registrationController.list(c),
 )
 
 registrationRoutes.get("/:eventId/registrations/export", eventScope, requireOrganizer, (c) =>
-  registrationController.exportCsv(c),
+	registrationController.exportCsv(c),
 )
 
 // BTC xem chi tiết một đăng ký (organizer only)
 registrationRoutes.get("/:eventId/registrations/:id", eventScope, requireOrganizer, (c) =>
-  registrationController.getById(c),
+	registrationController.getById(c),
 )
 
 // BTC bulk set shiftLocked (organizer only). ADR-017
 registrationRoutes.post(
-  "/:eventId/registrations/bulk-set-shift-locked",
-  eventScope,
-  requireOrganizer,
-  (c) => registrationController.bulkSetShiftLocked(c),
+	"/:eventId/registrations/bulk-set-shift-locked",
+	eventScope,
+	requireOrganizer,
+	(c) => registrationController.bulkSetShiftLocked(c),
 )
 
 // Thống kê đăng ký (organizer only)
 registrationRoutes.get("/:eventId/registrations-stats", eventScope, requireOrganizer, (c) =>
-  registrationController.getStats(c),
+	registrationController.getStats(c),
 )

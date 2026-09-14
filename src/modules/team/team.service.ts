@@ -65,9 +65,7 @@ export const teamService = {
 		// would let an organiser rename a team every other edition is using while
 		// believing they were changing only their own.
 		if (before.eventId === null) {
-			throw new ForbiddenError(
-				"Team dùng chung không sửa được từ trong một kỳ. Nó thuộc mọi kỳ.",
-			)
+			throw new ForbiddenError("Team dùng chung không sửa được từ trong một kỳ. Nó thuộc mọi kỳ.")
 		}
 
 		if (input.name && input.name !== before.name) {

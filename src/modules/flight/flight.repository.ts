@@ -1,18 +1,8 @@
 import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm"
 
 import { db, type DbExecutor } from "../../db/client"
-import {
-	flight,
-	flightAssignment,
-	registration,
-	team,
-	user,
-} from "../../db/schema"
-import type {
-	AllocationFlag,
-	FlightDirection,
-	FlightShift,
-} from "../../db/schema/flight.schema"
+import { flight, flightAssignment, registration, team, user } from "../../db/schema"
+import type { AllocationFlag, FlightDirection, FlightShift } from "../../db/schema/flight.schema"
 import { newId } from "../../shared/id"
 import type { ListFlightsQuery } from "./flight.dto"
 
@@ -127,11 +117,7 @@ export const flightRepository = {
 			.select()
 			.from(flight)
 			.where(
-				and(
-					eq(flight.eventId, eventId),
-					eq(flight.code, code),
-					eq(flight.direction, direction),
-				),
+				and(eq(flight.eventId, eventId), eq(flight.code, code), eq(flight.direction, direction)),
 			)
 			.limit(1)
 		return rows[0]
@@ -231,9 +217,7 @@ export const flightRepository = {
 			.select({ assignment: flightAssignment, flight })
 			.from(flightAssignment)
 			.innerJoin(flight, eq(flightAssignment.flightId, flight.id))
-			.where(
-				and(eq(flightAssignment.eventId, eventId), eq(flightAssignment.id, assignmentId)),
-			)
+			.where(and(eq(flightAssignment.eventId, eventId), eq(flightAssignment.id, assignmentId)))
 			.limit(1)
 		return rows[0]
 	},
@@ -344,9 +328,7 @@ export const flightRepository = {
 		const rows = await executor
 			.update(flightAssignment)
 			.set({ locked })
-			.where(
-				and(eq(flightAssignment.eventId, eventId), eq(flightAssignment.id, assignmentId)),
-			)
+			.where(and(eq(flightAssignment.eventId, eventId), eq(flightAssignment.id, assignmentId)))
 			.returning()
 		return rows[0]
 	},
@@ -359,9 +341,7 @@ export const flightRepository = {
 		const rows = await executor
 			.select({ value: count() })
 			.from(flightAssignment)
-			.where(
-				and(eq(flightAssignment.eventId, eventId), eq(flightAssignment.flightId, flightId)),
-			)
+			.where(and(eq(flightAssignment.eventId, eventId), eq(flightAssignment.flightId, flightId)))
 		return rows[0]?.value ?? 0
 	},
 

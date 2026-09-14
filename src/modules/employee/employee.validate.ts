@@ -31,8 +31,7 @@ export interface MasterLookups {
 }
 
 export type ValidationOutcome =
-	| { ok: true; records: EmployeeRecord[] }
-	| { ok: false; errors: RowError[]; totalErrors: number }
+	{ ok: true; records: EmployeeRecord[] } | { ok: false; errors: RowError[]; totalErrors: number }
 
 const header = Object.fromEntries(employeeColumns.map((c) => [c.key, c.header])) as Record<
 	string,

@@ -35,15 +35,23 @@ export const GENDER_LABELS: Record<string, "male" | "female" | "other" | "undisc
 	nam: "male",
 	male: "male",
 	m: "male",
-	"nữ": "female",
+	nữ: "female",
 	nu: "female",
 	female: "female",
 	f: "female",
-	"khác": "other",
+	khác: "other",
 	khac: "other",
 	other: "other",
 	"không tiết lộ": "undisclosed",
 	"khong tiet lo": "undisclosed",
+}
+
+/** Export writes these so the file round-trips through `GENDER_LABELS` on import. */
+export const GENDER_DISPLAY: Record<string, string> = {
+	male: "Nam",
+	female: "Nữ",
+	other: "Khác",
+	undisclosed: "Không tiết lộ",
 }
 
 export const GENDER_HINT = "Giới tính nhận: Nam, Nữ, Khác, Không tiết lộ."

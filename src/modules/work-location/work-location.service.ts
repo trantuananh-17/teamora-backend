@@ -24,7 +24,14 @@ export const workLocationService = {
 			)
 			await auditService.record(
 				// Null: this is company master data, not an edition's.
-				{ eventId: null, actor, entity: ENTITY, entityId: created.id, action: "create", after: created },
+				{
+					eventId: null,
+					actor,
+					entity: ENTITY,
+					entityId: created.id,
+					action: "create",
+					after: created,
+				},
 				tx,
 			)
 			return created

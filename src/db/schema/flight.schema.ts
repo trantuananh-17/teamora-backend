@@ -89,10 +89,7 @@ export const allocationRun = sqliteTable(
 			table.type,
 			table.createdAt,
 		),
-		check(
-			"allocation_run_type_check",
-			sql`${table.type} in ('flight', 'vehicle', 'room', 'gala')`,
-		),
+		check("allocation_run_type_check", sql`${table.type} in ('flight', 'vehicle', 'room', 'gala')`),
 		check(
 			"allocation_run_status_check",
 			sql`${table.status} in ('preview', 'committed', 'discarded')`,

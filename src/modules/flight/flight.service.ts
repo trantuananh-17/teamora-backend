@@ -70,10 +70,7 @@ export const flightService = {
 			throw new ConflictError(`Kỳ này đã có chuyến ${code} cho chiều đã chọn.`)
 		}
 		return db.transaction(async (tx) => {
-			const created = await flightRepository.insert(
-				{ id: newId(), eventId, ...input, code },
-				tx,
-			)
+			const created = await flightRepository.insert({ id: newId(), eventId, ...input, code }, tx)
 			await auditService.record(
 				{
 					eventId,
@@ -110,7 +107,9 @@ export const flightService = {
 			throw new ConflictError(`Kỳ này đã có chuyến ${nextCode} cho chiều đã chọn.`)
 		}
 
-		const affected = (await flightRepository.listAssignments(eventId)).filter((row) => row.assignment.flightId === flightId).map((row) => row.assignment.registrationId)
+		const affected = (await flightRepository.listAssignments(eventId))
+			.filter((row) => row.assignment.flightId === flightId)
+			.map((row) => row.assignment.registrationId)
 		return db.transaction(async (tx) => {
 			const updated = await flightRepository.update(
 				eventId,
@@ -282,7 +281,11 @@ export const flightService = {
 				),
 			)
 		}
-		return page(views.slice(pagination.offset, pagination.offset + pagination.limit), views.length, pagination)
+		return page(
+			views.slice(pagination.offset, pagination.offset + pagination.limit),
+			views.length,
+			pagination,
+		)
 	},
 
 	async manualAssign(
@@ -319,7 +322,9 @@ export const flightService = {
 			const finalOccupancy = target.assignedCount - alreadyOnTarget + registrations.length
 			const warnings: string[] = []
 			if (finalOccupancy > target.capacity) {
-				warnings.push(`Chuyến ${target.code} vượt ${finalOccupancy - target.capacity} chỗ sau điều chỉnh.`)
+				warnings.push(
+					`Chuyến ${target.code} vượt ${finalOccupancy - target.capacity} chỗ sau điều chỉnh.`,
+				)
 			}
 
 			const rows = registrations.map((row) => {
@@ -377,7 +382,12 @@ export const flightService = {
 		return db.transaction(async (tx) => {
 			const before = await flightRepository.findAssignmentById(eventId, assignmentId, tx)
 			if (!before) throw new NotFoundError("Flight assignment")
-			const after = await flightRepository.setAssignmentLock(eventId, assignmentId, input.locked, tx)
+			const after = await flightRepository.setAssignmentLock(
+				eventId,
+				assignmentId,
+				input.locked,
+				tx,
+			)
 			if (!after) throw new NotFoundError("Flight assignment")
 			await auditService.record(
 				{

@@ -23,9 +23,9 @@ export const DIRECTION_LABELS = {
 
 export const SHIFT_LABELS = {
 	"ca 1": "shift_1",
-	"ca1": "shift_1",
+	ca1: "shift_1",
 	shift_1: "shift_1",
 	"ca 2": "shift_2",
-	"ca2": "shift_2",
+	ca2: "shift_2",
 	shift_2: "shift_2",
 } as const

@@ -11,4 +11,6 @@ journeyRoutes.get("/me/journey", (c) => journeyController.mine(c))
 
 export const dashboardRoutes = new Hono<AppEnv>()
 dashboardRoutes.use("*", requireAuth)
-dashboardRoutes.get("/:eventId/dashboard", eventScope, requireOrganizer, (c) => journeyController.dashboard(c))
+dashboardRoutes.get("/:eventId/dashboard", eventScope, requireOrganizer, (c) =>
+	journeyController.dashboard(c),
+)

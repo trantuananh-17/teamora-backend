@@ -2,25 +2,28 @@ import { env } from "../config/env"
 import type { RegistrationWithRelations } from "../modules/registration/registration.repository"
 
 function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;")
+	return value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#039;")
 }
 
 /**
  * Dùng cho cả lần kích hoạt đầu tiên của user import và lần quên mật khẩu sau đó.
  * Better Auth quản lý token một lần; template chỉ nhận URL công khai của frontend.
  */
-export function renderPasswordReset(name: string, resetUrl: string): {
-  subject: string
-  html: string
+export function renderPasswordReset(
+	name: string,
+	resetUrl: string,
+): {
+	subject: string
+	html: string
 } {
-  return {
-    subject: "Thiết lập lại mật khẩu Teamora",
-    html: `
+	return {
+		subject: "Thiết lập lại mật khẩu Teamora",
+		html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -46,7 +49,7 @@ export function renderPasswordReset(name: string, resetUrl: string): {
 </body>
 </html>
     `.trim(),
-  }
+	}
 }
 
 /**
@@ -54,14 +57,14 @@ export function renderPasswordReset(name: string, resetUrl: string): {
  * Template đơn giản, chỉ thông tin cần thiết
  */
 export function renderRegistrationConfirmed(registration: RegistrationWithRelations): {
-  subject: string
-  html: string
+	subject: string
+	html: string
 } {
-  const eventLink = `${env.appBaseUrl}/`
+	const eventLink = `${env.appBaseUrl}/`
 
-  return {
-    subject: "Xác nhận đăng ký Team Building",
-    html: `
+	return {
+		subject: "Xác nhận đăng ký Team Building",
+		html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -93,37 +96,37 @@ export function renderRegistrationConfirmed(registration: RegistrationWithRelati
       </div>
 
       ${
-        registration.participating
-          ? `
+				registration.participating
+					? `
       <div class="info-row">
         <span class="label">Bộ phận:</span>
         <span class="value">${registration.team.name}</span>
       </div>
 
       ${
-        registration.shiftPreference
-          ? `
+				registration.shiftPreference
+					? `
       <div class="info-row">
         <span class="label">Ca bay nguyện vọng:</span>
         <span class="value">${registration.shiftPreference === "shift_1" ? "Ca 1" : "Ca 2"}</span>
       </div>
       `
-          : ""
-      }
+					: ""
+			}
 
       ${
-        registration.transportNeeds.some((n) => n.needed)
-          ? `
+				registration.transportNeeds.some((n) => n.needed)
+					? `
       <div class="info-row">
         <span class="label">Nhu cầu xe:</span>
         <span class="value">Đã đăng ký ${registration.transportNeeds.filter((n) => n.needed).length}/4 chặng</span>
       </div>
       `
-          : ""
-      }
+					: ""
+			}
       `
-          : ""
-      }
+					: ""
+			}
 
       <p>Bạn có thể xem lại hoặc chỉnh sửa thông tin đăng ký (trong thời gian cho phép) tại:</p>
       <a href="${eventLink}" class="button">Xem thông tin đăng ký</a>
@@ -137,21 +140,21 @@ export function renderRegistrationConfirmed(registration: RegistrationWithRelati
 </body>
 </html>
     `.trim(),
-  }
+	}
 }
 
 /**
  * §11 - Email thông báo BTC đã công bố thông tin
  */
 export function renderInformationPublished(): {
-  subject: string
-  html: string
+	subject: string
+	html: string
 } {
-  const journeyLink = `${env.appBaseUrl}/`
+	const journeyLink = `${env.appBaseUrl}/`
 
-  return {
-    subject: "Thông tin Team Building đã sẵn sàng",
-    html: `
+	return {
+		subject: "Thông tin Team Building đã sẵn sàng",
+		html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -184,28 +187,30 @@ export function renderInformationPublished(): {
 </body>
 </html>
     `.trim(),
-  }
+	}
 }
 
 /**
  * §11 - Email thông báo thay đổi phân bổ
  */
-export function renderAssignmentChanged(changeType: "flight" | "vehicle" | "room" | "schedule" | "announcement"): {
-  subject: string
-  html: string
+export function renderAssignmentChanged(
+	changeType: "flight" | "vehicle" | "room" | "schedule" | "announcement",
+): {
+	subject: string
+	html: string
 } {
-  const journeyLink = `${env.appBaseUrl}/`
-  const changeLabel = {
-    flight: "chuyến bay",
-    vehicle: "xe đưa đón",
-    room: "phòng",
-    schedule: "lịch trình chung",
-    announcement: "thông báo quan trọng",
-  }[changeType]
+	const journeyLink = `${env.appBaseUrl}/`
+	const changeLabel = {
+		flight: "chuyến bay",
+		vehicle: "xe đưa đón",
+		room: "phòng",
+		schedule: "lịch trình chung",
+		announcement: "thông báo quan trọng",
+	}[changeType]
 
-  return {
-    subject: `Thay đổi ${changeLabel} - Team Building`,
-    html: `
+	return {
+		subject: `Thay đổi ${changeLabel} - Team Building`,
+		html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -238,5 +243,5 @@ export function renderAssignmentChanged(changeType: "flight" | "vehicle" | "room
 </body>
 </html>
     `.trim(),
-  }
+	}
 }

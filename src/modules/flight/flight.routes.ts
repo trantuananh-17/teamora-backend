@@ -26,14 +26,15 @@ const configurableStatus = requireEventStatus(
 	"information_published",
 	"event_started",
 )
-const allocationStatus = requireEventStatus("registration_closed", "allocation_processing", "information_published", "event_started")
+const allocationStatus = requireEventStatus(
+	"registration_closed",
+	"allocation_processing",
+	"information_published",
+	"event_started",
+)
 
-flightRoutes.post(
-	"/:eventId/flights",
-	eventScope,
-	requireOrganizer,
-	configurableStatus,
-	(c) => flightController.create(c),
+flightRoutes.post("/:eventId/flights", eventScope, requireOrganizer, configurableStatus, (c) =>
+	flightController.create(c),
 )
 flightRoutes.post(
 	"/:eventId/flights/import",

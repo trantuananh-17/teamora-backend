@@ -72,10 +72,7 @@ export const vehicleAssignment = sqliteTable(
 		assignedAt: integer("assigned_at", { mode: "timestamp_ms" }).notNull(),
 	},
 	(table) => [
-		uniqueIndex("vehicle_assignment_registration_id_leg_uidx").on(
-			table.registrationId,
-			table.leg,
-		),
+		uniqueIndex("vehicle_assignment_registration_id_leg_uidx").on(table.registrationId, table.leg),
 		index("vehicle_assignment_event_id_vehicle_id_idx").on(table.eventId, table.vehicleId),
 		index("vehicle_assignment_event_id_leg_idx").on(table.eventId, table.leg),
 		check("vehicle_assignment_source_check", sql`${table.source} in ('auto', 'manual')`),

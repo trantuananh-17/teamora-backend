@@ -4,6 +4,11 @@ import { journeyQuerySchema } from "./journey.dto"
 import { journeyService } from "./journey.service"
 
 export const journeyController = {
-	async mine(c: AppContext) { const query = journeyQuerySchema.parse(c.req.query()); return c.json(await journeyService.mine(requireUser(c).id, query.eventId)) },
-	async dashboard(c: AppContext) { return c.json(await journeyService.dashboard(requireEventScope(c).id)) },
+	async mine(c: AppContext) {
+		const query = journeyQuerySchema.parse(c.req.query())
+		return c.json(await journeyService.mine(requireUser(c).id, query.eventId))
+	},
+	async dashboard(c: AppContext) {
+		return c.json(await journeyService.dashboard(requireEventScope(c).id))
+	},
 }

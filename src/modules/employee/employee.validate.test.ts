@@ -72,10 +72,7 @@ describe("validateEmployeeRows", () => {
 	})
 
 	it("treats an optional column left blank as absent, not as an error", () => {
-		const result = validateEmployeeRows(
-			sheet({ fullName: "B", email: "b@congty.vn" }),
-			master,
-		)
+		const result = validateEmployeeRows(sheet({ fullName: "B", email: "b@congty.vn" }), master)
 		expect(result.ok).toBe(true)
 		if (!result.ok) return
 		expect(result.records[0]).toMatchObject({
@@ -123,10 +120,7 @@ describe("validateEmployeeRows", () => {
 	})
 
 	it("catches a duplicate employee code inside the file", () => {
-		const result = validateEmployeeRows(
-			sheet(valid, { ...valid, email: "b@congty.vn" }),
-			master,
-		)
+		const result = validateEmployeeRows(sheet(valid, { ...valid, email: "b@congty.vn" }), master)
 		expect(result.ok).toBe(false)
 		if (result.ok) return
 		expect(result.errors[0]!.column).toBe("Mã nhân viên")

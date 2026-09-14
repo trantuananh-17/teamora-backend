@@ -49,7 +49,9 @@ export function allocateVehicles(input: VehicleAllocationInput): VehicleAllocati
 	const assignments: VehicleAllocationPlan["assignments"] = []
 	const unassigned: VehicleAllocationPlan["unassigned"] = []
 
-	for (const row of [...input.lockedAssignments].sort((a, b) => a.registrationId.localeCompare(b.registrationId))) {
+	for (const row of [...input.lockedAssignments].sort((a, b) =>
+		a.registrationId.localeCompare(b.registrationId),
+	)) {
 		if (lockedIds.has(row.registrationId) || !vehicleById.has(row.vehicleId)) continue
 		lockedIds.add(row.registrationId)
 		remaining.set(row.vehicleId, Math.max(0, (remaining.get(row.vehicleId) ?? 0) - 1))
@@ -70,7 +72,14 @@ export function allocateVehicles(input: VehicleAllocationInput): VehicleAllocati
 		for (const team of group.teams) {
 			let waiting = [...team.members].sort((a, b) => a.id.localeCompare(b.id))
 			while (waiting.length > 0) {
-				const target = rankVehicles(vehicles, remaining, vehicleGroups, group.key, input.leg, waiting[0]!.pickupPointId)[0]
+				const target = rankVehicles(
+					vehicles,
+					remaining,
+					vehicleGroups,
+					group.key,
+					input.leg,
+					waiting[0]!.pickupPointId,
+				)[0]
 				if (!target) break
 				const count = Math.min(waiting.length, remaining.get(target.id) ?? 0)
 				const seated = waiting.slice(0, count)
@@ -83,7 +92,8 @@ export function allocateVehicles(input: VehicleAllocationInput): VehicleAllocati
 				keys.add(group.key)
 				vehicleGroups.set(target.id, keys)
 			}
-			for (const person of waiting) unassigned.push({ registrationId: person.id, reason: "unassigned" })
+			for (const person of waiting)
+				unassigned.push({ registrationId: person.id, reason: "unassigned" })
 		}
 	}
 
@@ -123,9 +133,10 @@ export function allocateVehicles(input: VehicleAllocationInput): VehicleAllocati
 function groupCandidates(leg: TransportLeg, registrations: VehicleAllocationRegistration[]) {
 	const groups = new Map<string, VehicleAllocationRegistration[]>()
 	for (const person of registrations) {
-		const pickup = leg === "origin_to_airport" || leg === "airport_to_origin"
-			? person.pickupPointId ?? "__no_pickup"
-			: "__shared"
+		const pickup =
+			leg === "origin_to_airport" || leg === "airport_to_origin"
+				? (person.pickupPointId ?? "__no_pickup")
+				: "__shared"
 		const key = `${person.flightId}:${pickup}`
 		const rows = groups.get(key) ?? []
 		rows.push(person)
@@ -167,7 +178,8 @@ function rankVehicles(
 		.sort((left, right) => {
 			const leftGroups = vehicleGroups.get(left.id) ?? new Set<string>()
 			const rightGroups = vehicleGroups.get(right.id) ?? new Set<string>()
-			const affinity = (groups: Set<string>) => groups.has(groupKey) ? 2 : groups.size === 0 ? 1 : 0
+			const affinity = (groups: Set<string>) =>
+				groups.has(groupKey) ? 2 : groups.size === 0 ? 1 : 0
 			const affinityDelta = affinity(rightGroups) - affinity(leftGroups)
 			if (affinityDelta !== 0) return affinityDelta
 			const spaceDelta = (remaining.get(left.id) ?? 0) - (remaining.get(right.id) ?? 0)

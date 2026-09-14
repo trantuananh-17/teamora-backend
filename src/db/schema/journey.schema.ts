@@ -10,7 +10,9 @@ export const scheduleItem = sqliteTable(
 	"schedule_item",
 	{
 		id: text("id").primaryKey(),
-		eventId: text("event_id").notNull().references(() => event.id, { onDelete: "cascade" }),
+		eventId: text("event_id")
+			.notNull()
+			.references(() => event.id, { onDelete: "cascade" }),
 		day: integer("day").notNull(),
 		startAt: integer("start_at", { mode: "timestamp_ms" }).notNull(),
 		endAt: integer("end_at", { mode: "timestamp_ms" }).notNull(),
@@ -18,8 +20,13 @@ export const scheduleItem = sqliteTable(
 		description: text("description"),
 		location: text("location"),
 		sortOrder: integer("sort_order").notNull().default(0),
-		createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
+		createdAt: integer("created_at", { mode: "timestamp_ms" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+			.notNull()
+			.$defaultFn(() => new Date())
+			.$onUpdate(() => new Date()),
 	},
 	(table) => [
 		index("schedule_item_event_id_day_start_at_idx").on(table.eventId, table.day, table.startAt),
@@ -32,17 +39,27 @@ export const announcement = sqliteTable(
 	"announcement",
 	{
 		id: text("id").primaryKey(),
-		eventId: text("event_id").notNull().references(() => event.id, { onDelete: "cascade" }),
+		eventId: text("event_id")
+			.notNull()
+			.references(() => event.id, { onDelete: "cascade" }),
 		title: text("title").notNull(),
 		body: text("body").notNull(),
 		audience: text("audience").$type<AnnouncementAudience>().notNull().default("participants"),
 		publishedAt: integer("published_at", { mode: "timestamp_ms" }),
-		createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
+		createdAt: integer("created_at", { mode: "timestamp_ms" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+			.notNull()
+			.$defaultFn(() => new Date())
+			.$onUpdate(() => new Date()),
 	},
 	(table) => [
 		index("announcement_event_id_published_at_idx").on(table.eventId, table.publishedAt),
-		check("announcement_audience_check", sql`${table.audience} in ('all','participants','organizers')`),
+		check(
+			"announcement_audience_check",
+			sql`${table.audience} in ('all','participants','organizers')`,
+		),
 	],
 )
 

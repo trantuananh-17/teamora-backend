@@ -6,7 +6,13 @@ import { allocateVehicles, type VehicleAllocationInput } from "./allocator"
 const leg: TransportLeg = "origin_to_airport"
 
 function run(overrides: Partial<VehicleAllocationInput>) {
-	return allocateVehicles({ leg, vehicles: [], registrations: [], lockedAssignments: [], ...overrides })
+	return allocateVehicles({
+		leg,
+		vehicles: [],
+		registrations: [],
+		lockedAssignments: [],
+		...overrides,
+	})
 }
 
 describe("allocateVehicles", () => {
@@ -14,7 +20,10 @@ describe("allocateVehicles", () => {
 		const plan = run({
 			vehicles: [{ id: "bus-1", leg, capacity: 3, pickupPointId: "hn" }],
 			registrations: ["a", "b", "c"].map((id) => ({
-				id, teamId: "team", pickupPointId: "hn", flightId: "flight-1",
+				id,
+				teamId: "team",
+				pickupPointId: "hn",
+				flightId: "flight-1",
 			})),
 		})
 		expect(plan.assignments.map((row) => row.targetId)).toEqual(["bus-1", "bus-1", "bus-1"])
@@ -25,7 +34,10 @@ describe("allocateVehicles", () => {
 		const plan = run({
 			vehicles: [{ id: "bus-1", leg, capacity: 1, pickupPointId: null }],
 			registrations: ["a", "b"].map((id) => ({
-				id, teamId: "team", pickupPointId: "hn", flightId: "flight-1",
+				id,
+				teamId: "team",
+				pickupPointId: "hn",
+				flightId: "flight-1",
 			})),
 		})
 		expect(plan.assignments).toHaveLength(1)
@@ -65,6 +77,8 @@ describe("allocateVehicles", () => {
 			lockedAssignments: [{ registrationId: "locked", vehicleId: "bus-1" }],
 		}
 		expect(run(input)).toEqual(run(input))
-		expect(run(input).assignments).toEqual([{ registrationId: "a", targetId: "bus-2", flags: ["team_split"] }])
+		expect(run(input).assignments).toEqual([
+			{ registrationId: "a", targetId: "bus-2", flags: ["team_split"] },
+		])
 	})
 })

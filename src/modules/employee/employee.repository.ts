@@ -136,10 +136,7 @@ export const employeeRepository = {
 	},
 
 	/** user ids that already have a profile, so the import knows insert from update. */
-	async findProfileUserIds(
-		userIds: string[],
-		executor: DbExecutor = db,
-	): Promise<Set<string>> {
+	async findProfileUserIds(userIds: string[], executor: DbExecutor = db): Promise<Set<string>> {
 		const found = new Set<string>()
 		for (const batch of chunked(userIds)) {
 			const rows = await executor

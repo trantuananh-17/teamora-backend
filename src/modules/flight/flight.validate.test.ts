@@ -32,9 +32,7 @@ describe("validateFlightRows", () => {
 	})
 
 	it("reports the visible column when arrival is before departure", () => {
-		const result = validateFlightRows([
-			row(7, { ...valid, arriveAt: "12/10/2027 13:00" }),
-		])
+		const result = validateFlightRows([row(7, { ...valid, arriveAt: "12/10/2027 13:00" })])
 		expect(result).toMatchObject({
 			ok: false,
 			errors: [{ row: 7, column: "Giờ đến" }],

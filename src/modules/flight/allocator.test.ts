@@ -11,7 +11,11 @@ import {
 const direction: FlightDirection = "outbound"
 const params = { teamTogetherWeight: 100, shiftPreferenceWeight: 10 }
 
-function flight(id: string, capacity: number, shift: FlightShift | null = "shift_1"): AllocationFlight {
+function flight(
+	id: string,
+	capacity: number,
+	shift: FlightShift | null = "shift_1",
+): AllocationFlight {
 	return { id, direction, capacity, shift }
 }
 
@@ -88,7 +92,9 @@ describe("allocateFlights", () => {
 			],
 		})
 		expect(new Set(plan.assignments.map((row) => row.targetId)).size).toBe(1)
-		expect(plan.assignments.find((row) => row.registrationId === "b")?.flags).toContain("shift_unmet")
+		expect(plan.assignments.find((row) => row.registrationId === "b")?.flags).toContain(
+			"shift_unmet",
+		)
 	})
 
 	it("subtracts locked seats and never returns a replacement for them", () => {

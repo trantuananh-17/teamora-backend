@@ -11,8 +11,8 @@ export const notificationRoutes = new Hono<AppEnv>()
 
 notificationRoutes.use("*", requireAuth)
 notificationRoutes.get("/:eventId/notifications", eventScope, requireOrganizer, (c) =>
-  notificationController.list(c),
+	notificationController.list(c),
 )
 notificationRoutes.post("/:eventId/notifications/:id/retry", eventScope, requireOrganizer, (c) =>
-  notificationController.retry(c),
+	notificationController.retry(c),
 )

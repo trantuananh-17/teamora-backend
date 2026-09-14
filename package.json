@@ -17,7 +17,9 @@
 		"db:migrate": "tsx src/db/migrate.ts",
 		"db:studio": "drizzle-kit studio",
 		"seed:admin": "tsx src/db/seed-admin.ts",
-		"seed:demo": "tsx src/db/seed-demo.ts"
+		"seed:demo": "tsx src/db/seed-demo.ts",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
 	},
 	"pnpm": {
 		"peerDependencyRules": {
@@ -43,6 +45,7 @@
 		"@types/node": "^22.20.2",
 		"@types/nodemailer": "^8.0.1",
 		"drizzle-kit": "^0.31.10",
+		"prettier": "^3.9.6",
 		"tsup": "^8.5.1",
 		"tsx": "^4.23.13",
 		"typescript": "^5.9.3",

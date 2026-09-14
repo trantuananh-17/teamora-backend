@@ -6,7 +6,10 @@ export const flightAllocationParamsSchema = z.object({
 })
 
 export const createAllocationSchema = z.discriminatedUnion("type", [
-	z.object({ type: z.literal("flight"), params: flightAllocationParamsSchema.partial().optional() }),
+	z.object({
+		type: z.literal("flight"),
+		params: flightAllocationParamsSchema.partial().optional(),
+	}),
 	z.object({ type: z.literal("vehicle"), params: z.object({}).optional() }),
 ])
 

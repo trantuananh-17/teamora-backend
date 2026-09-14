@@ -19,10 +19,9 @@ export type FlightValidationOutcome =
 	| { ok: true; records: FlightImportRecord[] }
 	| { ok: false; errors: RowError[]; totalErrors: number }
 
-const headers = Object.fromEntries(flightColumns.map((column) => [column.key, column.header])) as Record<
-	string,
-	string
->
+const headers = Object.fromEntries(
+	flightColumns.map((column) => [column.key, column.header]),
+) as Record<string, string>
 
 export function validateFlightRows(rows: SheetData["rows"]): FlightValidationOutcome {
 	const errors: RowError[] = []
@@ -38,7 +37,8 @@ export function validateFlightRows(rows: SheetData["rows"]): FlightValidationOut
 			add(headers.code!, "Mã chuyến chỉ gồm chữ, số, gạch ngang và gạch dưới.")
 		}
 
-		const direction = DIRECTION_LABELS[(values.direction?.toLowerCase() ?? "") as keyof typeof DIRECTION_LABELS]
+		const direction =
+			DIRECTION_LABELS[(values.direction?.toLowerCase() ?? "") as keyof typeof DIRECTION_LABELS]
 		if (!direction) add(headers.direction!, "Chiều nhận một trong các giá trị: Đi, Về.")
 
 		const departAt = parseFlightDate(values.departAt ?? "")
@@ -95,14 +95,21 @@ function parseFlightDate(value: string): Date | null {
 	const local = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(value)
 	if (local) {
 		const [, day, month, year, hour, minute] = local
-		const parsed = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute))
+		const parsed = new Date(
+			Number(year),
+			Number(month) - 1,
+			Number(day),
+			Number(hour),
+			Number(minute),
+		)
 		if (
 			parsed.getFullYear() !== Number(year) ||
 			parsed.getMonth() !== Number(month) - 1 ||
 			parsed.getDate() !== Number(day) ||
 			parsed.getHours() !== Number(hour) ||
 			parsed.getMinutes() !== Number(minute)
-		) return null
+		)
+			return null
 		return parsed
 	}
 	const timestamp = Date.parse(value)

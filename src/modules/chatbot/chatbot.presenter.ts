@@ -74,12 +74,8 @@ export function presentChatbotJourney(journey: JourneyResult) {
 			gatherAt: vehicle.gatherAt,
 			departAt: vehicle.departAt,
 			destination: vehicle.destination,
-			pickupPoint: pickupPoint
-				? { name: pickupPoint.name, address: pickupPoint.address }
-				: null,
-			leader: vehicle.leaderName
-				? { name: vehicle.leaderName, phone: vehicle.leaderPhone }
-				: null,
+			pickupPoint: pickupPoint ? { name: pickupPoint.name, address: pickupPoint.address } : null,
+			leader: vehicle.leaderName ? { name: vehicle.leaderName, phone: vehicle.leaderPhone } : null,
 			note: vehicle.note,
 		})),
 		accommodation: journey.accommodation

@@ -41,7 +41,11 @@ async function navigate(url) {
 }
 
 async function evaluate(expression) {
-	const result = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true })
+	const result = await send("Runtime.evaluate", {
+		expression,
+		awaitPromise: true,
+		returnByValue: true,
+	})
 	if (result.exceptionDetails) throw new Error(result.exceptionDetails.text)
 	return result.result.value
 }
@@ -51,7 +55,9 @@ function assert(condition, message) {
 }
 
 async function login(email) {
-	return evaluate(`fetch('/api/v1/auth/sign-in/email',{method:'POST',headers:{'content-type':'application/json'},credentials:'include',body:JSON.stringify({email:${JSON.stringify(email)},password:'Teamora!2026'})}).then(async response=>({status:response.status,body:await response.text()}))`)
+	return evaluate(
+		`fetch('/api/v1/auth/sign-in/email',{method:'POST',headers:{'content-type':'application/json'},credentials:'include',body:JSON.stringify({email:${JSON.stringify(email)},password:'Teamora!2026'})}).then(async response=>({status:response.status,body:await response.text()}))`,
+	)
 }
 
 async function setViewport(width, height, mobile = false) {
@@ -71,10 +77,10 @@ async function assertNoHorizontalPageOverflow(screen) {
 		}
 	})()`)
 	assert(
-		metrics.page <= metrics.viewport + 1
-			&& metrics.body <= metrics.viewport + 1
-			&& metrics.mainScroll <= metrics.mainClient + 1
-			&& metrics.mainOffset === 0,
+		metrics.page <= metrics.viewport + 1 &&
+			metrics.body <= metrics.viewport + 1 &&
+			metrics.mainScroll <= metrics.mainClient + 1 &&
+			metrics.mainOffset === 0,
 		`${screen} bị cuộn ngang: ${JSON.stringify(metrics)}`,
 	)
 }
@@ -95,19 +101,40 @@ try {
 
 	await navigate(`http://localhost:3000/admin/events/${eventId}/audit-log`)
 	let text = await evaluate("document.body.innerText")
-	assert(text.includes("Nhật ký thay đổi") && text.includes("Người thao tác") && text.includes("Thay đổi"), `Màn Audit Log không hiển thị đúng: ${text.slice(0, 1_200)}`)
-	assert(text.includes("Xuất Excel") && text.includes("Tất cả đối tượng") && text.includes("Tất cả hành động"), "Audit Log thiếu export hoặc bộ lọc.")
+	assert(
+		text.includes("Nhật ký thay đổi") &&
+			text.includes("Người thao tác") &&
+			text.includes("Thay đổi"),
+		`Màn Audit Log không hiển thị đúng: ${text.slice(0, 1_200)}`,
+	)
+	assert(
+		text.includes("Xuất Excel") &&
+			text.includes("Tất cả đối tượng") &&
+			text.includes("Tất cả hành động"),
+		"Audit Log thiếu export hoặc bộ lọc.",
+	)
 	await assertNoHorizontalPageOverflow("Audit Log desktop")
 
-	const auditFiltered = await evaluate(`fetch('/api/v1/events/${eventId}/audit-logs?action=export&limit=10',{credentials:'include'}).then(async response=>({status:response.status,body:await response.json()}))`)
-	assert(auditFiltered.status === 200 && auditFiltered.body.items.every((item) => item.action === "export"), "Bộ lọc Audit API không đúng.")
+	const auditFiltered = await evaluate(
+		`fetch('/api/v1/events/${eventId}/audit-logs?action=export&limit=10',{credentials:'include'}).then(async response=>({status:response.status,body:await response.json()}))`,
+	)
+	assert(
+		auditFiltered.status === 200 &&
+			auditFiltered.body.items.every((item) => item.action === "export"),
+		"Bộ lọc Audit API không đúng.",
+	)
 
 	const exports = await evaluate(`Promise.all([
 		fetch('/api/v1/events/${eventId}/audit-logs/export',{credentials:'include'}),
 		fetch('/api/v1/events/${eventId}/export',{credentials:'include'}),
 		fetch('/api/v1/employees/export',{credentials:'include'})
 	]).then(async responses=>Promise.all(responses.map(async response=>({status:response.status,type:response.headers.get('content-type'),bytes:(await response.arrayBuffer()).byteLength}))))`)
-	assert(exports.every((item) => item.status === 200 && item.type.includes("spreadsheet") && item.bytes > 5_000), `Export S6 thất bại: ${JSON.stringify(exports)}`)
+	assert(
+		exports.every(
+			(item) => item.status === 200 && item.type.includes("spreadsheet") && item.bytes > 5_000,
+		),
+		`Export S6 thất bại: ${JSON.stringify(exports)}`,
+	)
 
 	const adminRoutes = [
 		["Danh sách kỳ", "/admin"],
@@ -139,16 +166,24 @@ try {
 		}
 	}
 	text = await evaluate("document.body.innerText")
-	assert(text.includes("Nhật ký thay đổi") && text.includes("Người thao tác"), "Audit Log mobile không render nội dung chính.")
+	assert(
+		text.includes("Nhật ký thay đổi") && text.includes("Người thao tác"),
+		"Audit Log mobile không render nội dung chính.",
+	)
 	await screenshot("audit-mobile")
 
 	await navigate(`http://localhost:3000/admin/events/${eventId}`)
 	text = await evaluate("document.body.innerText")
-	assert(text.includes("Tổng quan kỳ") && text.includes("Xuất toàn bộ dữ liệu"), "Tổng quan kỳ mobile thiếu export.")
+	assert(
+		text.includes("Tổng quan kỳ") && text.includes("Xuất toàn bộ dữ liệu"),
+		"Tổng quan kỳ mobile thiếu export.",
+	)
 	await assertNoHorizontalPageOverflow("Dashboard admin mobile")
 	await screenshot("dashboard-mobile")
 
-	await evaluate("fetch('/api/v1/auth/sign-out',{method:'POST',headers:{'content-type':'application/json'},credentials:'include',body:'{}'})")
+	await evaluate(
+		"fetch('/api/v1/auth/sign-out',{method:'POST',headers:{'content-type':'application/json'},credentials:'include',body:'{}'})",
+	)
 	result = await login("demo01@teamora.local")
 	assert(result.status === 200, `Đăng nhập CBNV thất bại: ${result.status}`)
 	const forbiddenAdminResponses = await evaluate(`Promise.all([
@@ -156,27 +191,45 @@ try {
 		fetch('/api/v1/events/${eventId}/export',{credentials:'include'}),
 		fetch('/api/v1/employees/export',{credentials:'include'})
 	]).then(responses=>responses.map(response=>response.status))`)
-	assert(forbiddenAdminResponses.every((status) => status === 403), `CBNV truy cập được API quản trị S6: ${JSON.stringify(forbiddenAdminResponses)}`)
+	assert(
+		forbiddenAdminResponses.every((status) => status === 403),
+		`CBNV truy cập được API quản trị S6: ${JSON.stringify(forbiddenAdminResponses)}`,
+	)
 	await navigate("http://localhost:3000/")
 	text = await evaluate("document.body.innerText")
-	assert(text.includes("Hành trình của Nguyễn Minh Anh") && text.includes("Chuyến bay") && text.includes("Xe đưa đón"), "My Journey mobile thiếu dữ liệu chính.")
+	assert(
+		text.includes("Hành trình của Nguyễn Minh Anh") &&
+			text.includes("Chuyến bay") &&
+			text.includes("Xe đưa đón"),
+		"My Journey mobile thiếu dữ liệu chính.",
+	)
 	await assertNoHorizontalPageOverflow("My Journey mobile")
 	await screenshot("journey-mobile")
 
-	console.log(JSON.stringify({
-		auditScreen: "ok",
-		auditFilters: "ok",
-		auditExport: "ok",
-		eventWorkbook: "ok",
-		masterWorkbook: "ok",
-		auditResponsive: "ok",
-		adminResponsive: "ok",
-		journeyResponsive: "ok",
-		employeeAdminDenied: "ok",
-		responsiveRoutes: adminRoutes.length,
-		responsiveViewports: viewports.length,
-	}, null, 2))
+	console.log(
+		JSON.stringify(
+			{
+				auditScreen: "ok",
+				auditFilters: "ok",
+				auditExport: "ok",
+				eventWorkbook: "ok",
+				masterWorkbook: "ok",
+				auditResponsive: "ok",
+				adminResponsive: "ok",
+				journeyResponsive: "ok",
+				employeeAdminDenied: "ok",
+				responsiveRoutes: adminRoutes.length,
+				responsiveViewports: viewports.length,
+			},
+			null,
+			2,
+		),
+	)
 } finally {
-	try { await send("Browser.close") } catch { /* Browser may already be closing. */ }
+	try {
+		await send("Browser.close")
+	} catch {
+		/* Browser may already be closing. */
+	}
 	socket.close()
 }

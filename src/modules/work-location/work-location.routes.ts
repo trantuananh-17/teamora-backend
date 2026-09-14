@@ -20,5 +20,5 @@ workLocationRoutes.use("*", requireAuth)
 workLocationRoutes.get("/", (c) => workLocationController.list(c))
 workLocationRoutes.post("/", requireOrganizer, (c) => workLocationController.create(c))
 workLocationRoutes.patch("/:workLocationId", requireOrganizer, (c) =>
-  workLocationController.update(c),
+	workLocationController.update(c),
 )

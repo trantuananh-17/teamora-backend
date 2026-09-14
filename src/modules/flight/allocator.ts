@@ -83,21 +83,17 @@ export function allocateFlights(input: FlightAllocationInput): FlightAllocationP
 	const candidates = input.registrations.filter((row) => !lockedIds.has(row.id))
 
 	// Hard shift constraints use the same pre-placement mechanism as locked rows.
-	for (const person of candidates
-		.filter((row) => row.shiftLocked)
-		.sort(compareRegistration)) {
+	for (const person of candidates.filter((row) => row.shiftLocked).sort(compareRegistration)) {
 		const eligible = flights
 			.filter(
-				(flight) =>
-					flight.shift === person.shiftPreference && (remaining.get(flight.id) ?? 0) > 0,
+				(flight) => flight.shift === person.shiftPreference && (remaining.get(flight.id) ?? 0) > 0,
 			)
 			.sort((left, right) => {
 				const teamDelta =
 					countTeamPlacements(person.teamId, right.id, placements, registrationById) -
 					countTeamPlacements(person.teamId, left.id, placements, registrationById)
 				if (teamDelta !== 0) return teamDelta
-				const remainingDelta =
-					(remaining.get(left.id) ?? 0) - (remaining.get(right.id) ?? 0)
+				const remainingDelta = (remaining.get(left.id) ?? 0) - (remaining.get(right.id) ?? 0)
 				return remainingDelta || left.id.localeCompare(right.id)
 			})
 
@@ -111,7 +107,10 @@ export function allocateFlights(input: FlightAllocationInput): FlightAllocationP
 	}
 
 	const groups = groupByTeam(candidates.filter((row) => !row.shiftLocked))
-	groups.sort((left, right) => right.members.length - left.members.length || left.key.localeCompare(right.key))
+	groups.sort(
+		(left, right) =>
+			right.members.length - left.members.length || left.key.localeCompare(right.key),
+	)
 
 	for (const group of groups) {
 		const members = [...group.members].sort(compareRegistration)
@@ -157,20 +156,14 @@ export function allocateFlights(input: FlightAllocationInput): FlightAllocationP
 			if (available <= 0 || waiting.length === 0) continue
 			waiting = [...waiting].sort((left, right) => {
 				const leftMatches = left.shiftPreference !== null && left.shiftPreference === target.shift
-				const rightMatches = right.shiftPreference !== null && right.shiftPreference === target.shift
+				const rightMatches =
+					right.shiftPreference !== null && right.shiftPreference === target.shift
 				return Number(rightMatches) - Number(leftMatches) || compareRegistration(left, right)
 			})
 			const seated = waiting.slice(0, available)
 			waiting = waiting.slice(available)
 			for (const person of seated) {
-				place(
-					person,
-					target,
-					shiftFlags(person, target),
-					assignments,
-					placements,
-					remaining,
-				)
+				place(person, target, shiftFlags(person, target), assignments, placements, remaining)
 			}
 		}
 
@@ -214,7 +207,10 @@ export function allocateFlights(input: FlightAllocationInput): FlightAllocationP
 }
 
 function compareRegistration(left: AllocationRegistration, right: AllocationRegistration): number {
-	return (left.teamId ?? left.id).localeCompare(right.teamId ?? right.id) || left.id.localeCompare(right.id)
+	return (
+		(left.teamId ?? left.id).localeCompare(right.teamId ?? right.id) ||
+		left.id.localeCompare(right.id)
+	)
 }
 
 function groupByTeam(registrations: AllocationRegistration[]) {
@@ -265,10 +261,7 @@ function flightPreferenceScore(
 	return matches * params.shiftPreferenceWeight + members.length * params.teamTogetherWeight
 }
 
-function shiftFlags(
-	person: AllocationRegistration,
-	flight: AllocationFlight,
-): AllocationFlag[] {
+function shiftFlags(person: AllocationRegistration, flight: AllocationFlight): AllocationFlag[] {
 	return person.shiftPreference && flight.shift && person.shiftPreference !== flight.shift
 		? ["shift_unmet"]
 		: []
@@ -288,5 +281,7 @@ function place(
 }
 
 function uniqueFlags(flags: AllocationFlag[]): AllocationFlag[] {
-	return [...new Set(flags)].sort((left, right) => FLAG_ORDER.indexOf(left) - FLAG_ORDER.indexOf(right))
+	return [...new Set(flags)].sort(
+		(left, right) => FLAG_ORDER.indexOf(left) - FLAG_ORDER.indexOf(right),
+	)
 }

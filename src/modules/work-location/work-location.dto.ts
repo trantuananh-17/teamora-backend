@@ -1,8 +1,8 @@
 import { z } from "zod"
 
 export const createWorkLocationSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  sortOrder: z.number().int().min(0).default(0),
+	name: z.string().trim().min(1).max(120),
+	sortOrder: z.number().int().min(0).default(0),
 })
 
 export type CreateWorkLocationInput = z.infer<typeof createWorkLocationSchema>
@@ -15,11 +15,11 @@ export type CreateWorkLocationInput = z.infer<typeof createWorkLocationSchema>
  * while the people who worked there keep pointing at it.
  */
 export const updateWorkLocationSchema = z
-  .object({
-    name: z.string().trim().min(1).max(120).optional(),
-    active: z.boolean().optional(),
-    sortOrder: z.number().int().min(0).optional(),
-  })
-  .refine((input) => Object.keys(input).length > 0, "Không có trường nào để cập nhật.")
+	.object({
+		name: z.string().trim().min(1).max(120).optional(),
+		active: z.boolean().optional(),
+		sortOrder: z.number().int().min(0).optional(),
+	})
+	.refine((input) => Object.keys(input).length > 0, "Không có trường nào để cập nhật.")
 
 export type UpdateWorkLocationInput = z.infer<typeof updateWorkLocationSchema>

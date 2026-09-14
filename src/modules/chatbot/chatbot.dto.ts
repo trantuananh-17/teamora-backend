@@ -20,7 +20,11 @@ export const chatbotJourneyRequestSchema = z
 	.object({
 		eventCode: eventCodeSchema.optional(),
 		employeeCode: employeeCodeSchema.optional(),
-		email: z.email().max(320).transform((value) => value.toLowerCase()).optional(),
+		email: z
+			.email()
+			.max(320)
+			.transform((value) => value.toLowerCase())
+			.optional(),
 	})
 	.refine((value) => Number(Boolean(value.employeeCode)) + Number(Boolean(value.email)) === 1, {
 		message: "Provide exactly one employee identity header.",

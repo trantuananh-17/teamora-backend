@@ -46,7 +46,7 @@ export const flightController = {
 		const body = await c.req.parseBody()
 		const file = body.file
 		if (!(file instanceof File)) {
-			throw new ValidationError("Thiếu file. Gửi dạng multipart/form-data với trường \"file\".")
+			throw new ValidationError('Thiếu file. Gửi dạng multipart/form-data với trường "file".')
 		}
 		if (file.size > env.import.maxFileBytes) {
 			throw new ValidationError(

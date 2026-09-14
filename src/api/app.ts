@@ -47,8 +47,7 @@ export function createApp() {
 	app.use(
 		"*",
 		cors({
-			origin: (origin) =>
-				ALLOWED_ORIGINS.some((pattern) => pattern.test(origin)) ? origin : null,
+			origin: (origin) => (ALLOWED_ORIGINS.some((pattern) => pattern.test(origin)) ? origin : null),
 			allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 			allowHeaders: ["Content-Type", "Authorization", "x-request-id"],
 			credentials: true,

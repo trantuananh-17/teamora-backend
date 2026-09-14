@@ -23,9 +23,7 @@ export const allocationController = {
 
 	async commit(c: AppContext) {
 		const event = requireEventScope(c)
-		return c.json(
-			await allocationService.commit(event.id, requireParam(c, "runId"), auditActor(c)),
-		)
+		return c.json(await allocationService.commit(event.id, requireParam(c, "runId"), auditActor(c)))
 	},
 
 	async discard(c: AppContext) {
